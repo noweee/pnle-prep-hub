@@ -526,6 +526,120 @@ h1, h2, h3, h4, h5, h6 {
   gap: 24px;
 }
 
+/* Quiz header bar — 2-row flex layout */
+.quiz-header-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quiz-category-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.quiz-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quiz-timer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  margin-right: auto; /* pushes buttons to the right */
+}
+
+.quiz-action-btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Quick-pick question count buttons */
+.quick-pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.quick-pick-btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  flex: 1;
+  min-width: 44px;
+  text-align: center;
+}
+
+/* Love dedication footer */
+.love-footer {
+  border-top: 1px solid var(--border-color);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  padding: 28px 0;
+  text-align: center;
+}
+
+.love-footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.love-footer-hearts {
+  font-size: 1.5rem;
+  letter-spacing: 4px;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+.love-footer-message {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.love-footer-message em {
+  font-style: normal;
+  color: var(--danger);
+}
+
+.love-footer-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.2); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.15); }
+  70% { transform: scale(1); }
+}
+
 @media (max-width: 900px) {
   .quiz-layout {
     grid-template-columns: 1fr;

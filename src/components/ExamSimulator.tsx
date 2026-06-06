@@ -249,11 +249,12 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
 
             <div className="quiz-config-grid">
               <div className="form-group">
-                <label className="form-label">1. Select Subject / Board area</label>
+                <label className="form-label">1. Select Subject / Board Area</label>
                 <select
                   className="form-control"
                   value={config.category}
                   onChange={(e) => setConfig({ ...config, category: e.target.value })}
+                  style={{ width: '100%' }}
                 >
                   <option value="all">All Subjects (Complete Board Coverage)</option>
                   {categories.filter(c => c !== 'all').map((cat, idx) => (
@@ -266,13 +267,14 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
               </div>
 
               <div className="form-group">
-                <label className="form-label">2. Select Number of Questions</label>
+                <label className="form-label">2. Number of Questions</label>
                 <input
                   type="number"
                   className="form-control"
                   min={1}
                   max={maxQuestions}
                   value={config.questionCount}
+                  style={{ width: '100%' }}
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
                     if (!isNaN(val)) {
@@ -280,13 +282,12 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
                     }
                   }}
                 />
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <div className="quick-pick-row">
                   {[5, 10, 25, 50, 100].map((num) => (
                     <button
                       key={num}
                       type="button"
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                      className="btn btn-secondary quick-pick-btn"
                       disabled={num > maxQuestions}
                       onClick={() => setConfig({ ...config, questionCount: num })}
                     >
@@ -348,39 +349,38 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
   return (
     <div className="flex flex-col gap-3">
       {/* Header bar during testing */}
-      <div className="flex justify-between align-center card" style={{ padding: '16px', borderRadius: 'var(--radius-sm)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span className="badge badge-info" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div className="quiz-header-bar card" style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)' }}>
+        {/* Row 1: mode badge + category */}
+        <div className="quiz-header-top">
+          <span className="badge badge-info" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
             {session.config.mode === 'qna' ? 'Q&A Practice' : 'Exam Simulation'}
           </span>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Category: {q.category || 'General'}
+          <span className="quiz-category-label">
+            {q.category || 'General'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="flex align-center gap-1" style={{ color: timerSeconds < 60 ? 'var(--danger)' : 'var(--text-primary)' }}>
-            <Clock size={18} />
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: '700', fontSize: '1.1rem' }}>
-              {formatTime(timerSeconds)}
-            </span>
+        {/* Row 2: timer + action buttons */}
+        <div className="quiz-header-actions">
+          <div className="quiz-timer" style={{ color: timerSeconds < 60 ? 'var(--danger)' : 'var(--text-primary)' }}>
+            <Clock size={16} />
+            <span>{formatTime(timerSeconds)}</span>
           </div>
           <button 
-            className="btn btn-secondary"
+            className="btn btn-secondary quiz-action-btn"
             onClick={() => setIsReportOpen(true)}
-            style={{ padding: '6px 12px', fontSize: '0.8rem', color: 'var(--warning)', borderColor: 'var(--warning)' }}
+            style={{ color: 'var(--warning)', borderColor: 'var(--warning)' }}
             title="Report mistake or revision request"
           >
             <AlertTriangle size={14} />
-            Report Issue
+            <span className="quiz-btn-label">Report Issue</span>
           </button>
           <button 
-            className={`btn ${currentQState.isFlagged ? 'btn-danger' : 'btn-secondary'}`}
+            className={`btn quiz-action-btn ${currentQState.isFlagged ? 'btn-danger' : 'btn-secondary'}`}
             onClick={handleToggleFlag}
-            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
           >
             <Flag size={14} />
-            {currentQState.isFlagged ? 'Flagged' : 'Flag for Review'}
+            <span className="quiz-btn-label">{currentQState.isFlagged ? 'Flagged' : 'Flag'}</span>
           </button>
         </div>
       </div>

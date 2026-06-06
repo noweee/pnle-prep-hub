@@ -411,34 +411,24 @@ export default function App() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer
-        style={{
-          borderTop: '1px solid var(--border-color)',
-          background: 'var(--bg-tertiary)',
-          padding: '24px 0',
-          fontSize: '0.85rem',
-          color: 'var(--text-muted)',
-          textAlign: 'center'
-        }}
-      >
+      {/* Love Dedication Footer */}
+      <footer className="love-footer">
         <div className="container">
-          <p>© {new Date().getFullYear()} PNLE Prep Hub. All operations runs client-side (Offline Capable).</p>
-          <p style={{ marginTop: '4px', fontSize: '0.75rem' }}>
-            To edit questions or import spreadsheets, click the{' '}
-            <button
-              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit' }}
-              onClick={() => {
-                if (isAdminMode) handleLockAdmin();
-                else setIsPasscodeOpen(true);
-              }}
-            >
-              {isAdminMode ? 'Admin Lock' : 'Admin Login'}
-            </button>{' '}
-            link in the navigation bar above.
-          </p>
+          <div className="love-footer-inner">
+            <div className="love-footer-hearts">👷 ❤️ 🩺</div>
+            <p className="love-footer-message">
+              Made with love by <em>Carlo</em>, for <em>Toni</em> — my future RN 🎓
+            </p>
+            <p className="love-footer-sub">
+              Believing in you every step of the way. You've got this! 💪
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+              © {new Date().getFullYear()} PNLE Prep Hub · All data stored locally on your browser
+            </p>
+          </div>
         </div>
       </footer>
+
 
     </div>
   );
