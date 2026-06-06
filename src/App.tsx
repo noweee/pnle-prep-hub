@@ -423,7 +423,7 @@ export default function App() {
               Believing in you every step of the way. You've got this! 💪
             </p>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-              © {new Date().getFullYear()} PNLE Toni Hub · All data stored locally on your browser
+              © {new Date().getFullYear()} PNLE Toni Hub
             </p>
           </div>
         </div>
