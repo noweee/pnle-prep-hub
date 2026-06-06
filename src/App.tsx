@@ -73,7 +73,7 @@ export default function App() {
   const [history, setHistory] = useState<ExamHistoryItem[]>([]);
   const [revisionRequests, setRevisionRequests] = useState<RevisionRequest[]>([]);
   const [completedSession, setCompletedSession] = useState<QuizSession | null>(null);
-  
+
   // Admin Privileges
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
@@ -86,7 +86,7 @@ export default function App() {
   // Load state on mount
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
-    
+
     // Load questions
     const cachedQs = localStorage.getItem('pnle_questions');
     if (cachedQs) {
@@ -164,7 +164,7 @@ export default function App() {
   const handleDeleteQuestion = (id: string) => {
     const updated = questions.filter(item => item.id !== id);
     saveQuestions(updated);
-    
+
     // Auto clear revisions associated with deleted question
     const updatedRevs = revisionRequests.filter(r => r.questionId !== id);
     saveRevisions(updatedRevs);
@@ -196,7 +196,7 @@ export default function App() {
   // Passcode verification
   const handleVerifyPasscode = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcodeInput === 'admin123') {
+    if (passcodeInput === '7324514321') {
       setIsAdminMode(true);
       setIsPasscodeOpen(false);
       setPasscodeInput('');
@@ -238,7 +238,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col" style={{ minHeight: '100vh' }}>
-      
+
       {/* Top navbar */}
       <nav className="navbar">
         <div className="container nav-container">
@@ -247,7 +247,7 @@ export default function App() {
           </div>
 
           <div className="nav-links">
-            <button 
+            <button
               className={`nav-button ${activeTab === 'dashboard' ? 'active' : ''}`}
               onClick={() => setActiveTab('dashboard')}
             >
@@ -258,14 +258,14 @@ export default function App() {
             {/* Admin only views */}
             {isAdminMode && (
               <>
-                <button 
+                <button
                   className={`nav-button ${activeTab === 'bank' ? 'active' : ''}`}
                   onClick={() => setActiveTab('bank')}
                 >
                   <BookOpen size={16} />
                   <span>Question Bank</span>
                 </button>
-                <button 
+                <button
                   className={`nav-button ${activeTab === 'upload' ? 'active' : ''}`}
                   onClick={() => setActiveTab('upload')}
                 >
@@ -275,14 +275,14 @@ export default function App() {
               </>
             )}
 
-            <button 
+            <button
               className={`nav-button ${activeTab === 'quiz' || activeTab === 'results' ? 'active' : ''}`}
               onClick={() => setActiveTab('quiz')}
             >
               <Play size={16} />
               <span>Simulator</span>
             </button>
-            
+
             {/* Admin toggle lock */}
             {isAdminMode ? (
               <button className="nav-button" onClick={handleLockAdmin} style={{ color: 'var(--success)' }}>
@@ -296,8 +296,8 @@ export default function App() {
               </button>
             )}
 
-            <button 
-              className="theme-toggle" 
+            <button
+              className="theme-toggle"
               onClick={handleToggleTheme}
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
@@ -310,11 +310,11 @@ export default function App() {
       {/* Main body container */}
       <main style={{ flex: 1, padding: '32px 0' }}>
         <div className="container">
-          
+
           {activeTab === 'dashboard' && (
-            <Dashboard 
-              questions={questions} 
-              history={history} 
+            <Dashboard
+              questions={questions}
+              history={history}
               isAdminMode={isAdminMode}
               onNavigate={(tab) => {
                 if (tab === 'quiz') setActiveTab('quiz');
@@ -342,15 +342,15 @@ export default function App() {
           )}
 
           {activeTab === 'quiz' && (
-            <ExamSimulator 
-              questions={questions} 
+            <ExamSimulator
+              questions={questions}
               onQuizSubmitted={handleQuizSubmitted}
               onSubmitRevision={handleSubmitRevision}
             />
           )}
 
           {activeTab === 'results' && completedSession && (
-            <ExamResults 
+            <ExamResults
               session={completedSession}
               onBackToDashboard={() => setActiveTab('dashboard')}
               onRestartQuiz={() => setActiveTab('quiz')}
@@ -374,14 +374,14 @@ export default function App() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={handleVerifyPasscode}>
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label">Enter Passcode to Unlock Panel</label>
                 <input
                   type="password"
                   className="form-control"
-                  placeholder="Password (default: admin123)"
+                  placeholder="Enter admin passcode"
                   value={passcodeInput}
                   onChange={(e) => setPasscodeInput(e.target.value)}
                   autoFocus
@@ -395,9 +395,9 @@ export default function App() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() => { setIsPasscodeOpen(false); setPasscodeInput(''); setPasscodeError(''); }}
                 >
                   Cancel
@@ -412,21 +412,21 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer 
-        style={{ 
-          borderTop: '1px solid var(--border-color)', 
+      <footer
+        style={{
+          borderTop: '1px solid var(--border-color)',
           background: 'var(--bg-tertiary)',
-          padding: '24px 0', 
-          fontSize: '0.85rem', 
+          padding: '24px 0',
+          fontSize: '0.85rem',
           color: 'var(--text-muted)',
-          textAlign: 'center' 
+          textAlign: 'center'
         }}
       >
         <div className="container">
           <p>© {new Date().getFullYear()} PNLE Prep Hub. All operations runs client-side (Offline Capable).</p>
           <p style={{ marginTop: '4px', fontSize: '0.75rem' }}>
             To edit questions or import spreadsheets, click the{' '}
-            <button 
+            <button
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit' }}
               onClick={() => {
                 if (isAdminMode) handleLockAdmin();
@@ -435,7 +435,7 @@ export default function App() {
             >
               {isAdminMode ? 'Admin Lock' : 'Admin Login'}
             </button>{' '}
-            link. Passcode: <code>admin123</code>.
+            link in the navigation bar above.
           </p>
         </div>
       </footer>
