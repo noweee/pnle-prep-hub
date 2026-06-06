@@ -204,6 +204,7 @@ export default function Dashboard({ questions, history, isAdminMode, onNavigate,
                 return (
                   <div 
                     key={item.id} 
+                    className="history-item-row"
                     style={{ 
                       padding: '12px', 
                       background: 'var(--bg-primary)', 

@@ -814,15 +814,372 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
+/* =====================================================
+   RESPONSIVE DESIGN — Mobile, Tablet, iPad, Desktop
+   ===================================================== */
+
+/* --- Base touch improvements for all devices --- */
+@media (pointer: coarse) {
+  .btn, .nav-button, .choice-btn, .quiz-nav-item,
+  .mode-selector-card, .accordion-header {
+    min-height: 44px; /* iOS/Android minimum tap target */
+  }
+}
+
+/* --- iPad Pro / Large Tablet (≤1024px) --- */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
+  }
+
+  .quiz-layout {
+    grid-template-columns: 1fr 240px;
+    gap: 16px;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+/* --- iPad / Tablet (≤768px) --- */
+@media (max-width: 768px) {
   .container {
     padding: 0 16px;
   }
+
+  /* Navbar: tighter on tablet */
+  .navbar {
+    height: auto;
+    min-height: 60px;
+    padding: 8px 0;
+  }
+
+  .nav-container {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 0;
+  }
+
+  .nav-logo {
+    font-size: 1.25rem;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  /* Main body spacing */
+  main {
+    padding: 20px 0 !important;
+  }
+
+  /* Cards */
+  .card {
+    padding: 18px;
+  }
+
+  /* Quiz switches to single column */
+  .quiz-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Dashboard sub-panels stack */
+  .dashboard-stats {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* Dashboard bottom panels stack */
+  .grid[style*="minmax(350px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Modals: full-width on tablet */
+  .modal-content {
+    margin: 16px;
+    padding: 24px;
+    max-width: calc(100vw - 32px);
+    max-height: 85vh;
+  }
+
+  /* Quiz config grid: 1 col */
+  .quiz-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Data tables: scroll horizontally */
+  .data-table-container {
+    font-size: 0.82rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 12px;
+  }
+
+  /* Score circle */
+  .score-circle {
+    width: 130px;
+    height: 130px;
+  }
+
+  .score-circle-percent {
+    font-size: 1.8rem;
+  }
+
+  /* Stat value smaller */
+  .stat-value {
+    font-size: 1.8rem;
+  }
+
+  /* Welcome banner heading */
+  h1[style*="2.25rem"] {
+    font-size: 1.6rem !important;
+  }
+}
+
+/* --- Mobile (≤640px) --- */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  /* Navbar collapses logo text */
   .nav-logo span {
     display: none;
   }
+
+  .nav-logo {
+    font-size: 1.1rem;
+    gap: 6px;
+  }
+
+  .nav-links {
+    gap: 2px;
+  }
+
+  .nav-button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+
+  .nav-button span {
+    display: none; /* Icon-only on small screens */
+  }
+
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Main content */
+  main {
+    padding: 16px 0 !important;
+  }
+
+  /* Cards */
+  .card {
+    padding: 16px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Dashboard stats: single column */
   .dashboard-stats {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  /* Stat cards: horizontal layout */
+  .card[style*="display: 'flex'"],
+  .card > div[style*="display: flex"][style*="gap: '16px'"] {
+    gap: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.6rem;
+  }
+
+  .icon-container {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+
+  /* Welcome banner */
+  .card h1 {
+    font-size: 1.4rem !important;
+  }
+
+  .card p {
+    font-size: 0.9rem !important;
+  }
+
+  /* Buttons: full width stacking */
+  .btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
+  /* Choice buttons: easier to tap */
+  .choice-btn {
+    padding: 14px 12px;
+    font-size: 0.92rem;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .choice-letter {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  /* Quiz nav grid: more columns on small */
+  .quiz-nav-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+
+  .quiz-nav-item {
+    font-size: 0.75rem;
+  }
+
+  /* Modals: nearly full screen */
+  .modal-content {
+    margin: 8px;
+    padding: 20px 16px;
+    max-width: calc(100vw - 16px);
+    max-height: 88vh;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header h3 {
+    font-size: 1.05rem !important;
+  }
+
+  /* Score circle */
+  .score-circle {
+    width: 110px;
+    height: 110px;
+  }
+
+  .score-circle-percent {
+    font-size: 1.5rem;
+  }
+
+  /* Results page: stacked action buttons */
+  .results-actions {
+    flex-direction: column;
+  }
+
+  /* Data table: smaller font */
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  /* Accordion */
+  .accordion-header {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  .accordion-content {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+
+  /* Upload dropzone */
+  .upload-dropzone {
+    padding: 32px 16px;
+  }
+
+  /* Rationale */
+  .rationale-container {
+    margin-top: 16px;
+    padding: 12px;
+  }
+
+  /* Badge */
+  .badge {
+    font-size: 0.7rem;
+    padding: 3px 7px;
+  }
+
+  /* Form controls: larger for touch */
+  .form-control {
+    padding: 12px 14px;
+    font-size: 1rem; /* Prevents iOS auto-zoom (must be ≥16px equivalent) */
+  }
+
+  select.form-control {
+    font-size: 1rem;
   }
 }
+
+/* --- Small Mobile (≤480px) --- */
+@media (max-width: 480px) {
+  .nav-button {
+    padding: 5px 8px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .quiz-nav-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  /* History log items: stack vertically */
+  .history-item-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .modal-content {
+    padding: 16px 14px;
+  }
+
+  .score-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .score-circle-percent {
+    font-size: 1.3rem;
+  }
+}
+
+/* --- Safe area insets for notched phones (iPhone X+) --- */
+@supports (padding: max(0px)) {
+  .navbar {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+
+  .container {
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  footer {
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
+
