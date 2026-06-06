@@ -243,7 +243,7 @@ export default function App() {
       <nav className="navbar">
         <div className="container nav-container">
           <div className="nav-logo" onClick={() => setActiveTab('dashboard')}>
-            🩺 <span>PNLE</span>Prep Hub
+            🩺 <span>PNLE</span>Toni Hub
           </div>
 
           <div className="nav-links">
@@ -423,7 +423,7 @@ export default function App() {
               Believing in you every step of the way. You've got this! 💪
             </p>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-              © {new Date().getFullYear()} PNLE Prep Hub · All data stored locally on your browser
+              © {new Date().getFullYear()} PNLE Toni Hub · All data stored locally on your browser
             </p>
           </div>
         </div>
