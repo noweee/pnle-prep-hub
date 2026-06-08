@@ -8,6 +8,7 @@ import ExcelUpload from './components/ExcelUpload';
 import TestBankManager from './components/TestBankManager';
 import ExamSimulator from './components/ExamSimulator';
 import ExamResults from './components/ExamResults';
+import { fetchSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
 
 const INITIAL_SAMPLE_QUESTIONS: Question[] = [
   {
@@ -70,6 +71,8 @@ const INITIAL_SAMPLE_QUESTIONS: Question[] = [
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bank' | 'upload' | 'quiz' | 'results'>('dashboard');
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [isQuestionBankLoading, setIsQuestionBankLoading] = useState(true);
+  const [questionBankError, setQuestionBankError] = useState('');
   const [history, setHistory] = useState<ExamHistoryItem[]>([]);
   const [revisionRequests, setRevisionRequests] = useState<RevisionRequest[]>([]);
   const [completedSession, setCompletedSession] = useState<QuizSession | null>(null);
@@ -87,19 +90,42 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
 
-    // Load questions
-    const cachedQs = localStorage.getItem('pnle_questions');
-    if (cachedQs) {
+    const loadQuestionBank = async () => {
       try {
-        setQuestions(JSON.parse(cachedQs));
+        const cachedQs = localStorage.getItem('pnle_questions');
+        let localQuestions: Question[] = [];
+
+        if (cachedQs) {
+          try {
+            const parsedQuestions = JSON.parse(cachedQs);
+            localQuestions = Array.isArray(parsedQuestions) ? parsedQuestions : [];
+          } catch (e) {
+            console.error("Error reading local questions for migration:", e);
+          }
+        }
+
+        const sharedQuestions = await fetchSharedQuestions();
+
+        if (sharedQuestions.length > 0) {
+          setQuestions(sharedQuestions);
+        } else {
+          const seedQuestions = localQuestions.length > 0 ? localQuestions : INITIAL_SAMPLE_QUESTIONS;
+          const seededQuestions = await saveSharedQuestions(seedQuestions);
+          setQuestions(seededQuestions.length > 0 ? seededQuestions : seedQuestions);
+        }
+
+        localStorage.removeItem('pnle_questions');
+        setQuestionBankError('');
       } catch (e) {
-        console.error("Error loading cached questions:", e);
+        console.error("Error loading shared questions:", e);
         setQuestions(INITIAL_SAMPLE_QUESTIONS);
+        setQuestionBankError('The shared question bank could not be reached. Changes will not sync across devices until storage is configured.');
+      } finally {
+        setIsQuestionBankLoading(false);
       }
-    } else {
-      setQuestions(INITIAL_SAMPLE_QUESTIONS);
-      localStorage.setItem('pnle_questions', JSON.stringify(INITIAL_SAMPLE_QUESTIONS));
-    }
+    };
+
+    loadQuestionBank();
 
     // Load history
     const cachedHistory = localStorage.getItem('pnle_history');
@@ -128,9 +154,22 @@ export default function App() {
     document.documentElement.classList.toggle('dark', nextDark);
   };
 
-  const saveQuestions = (newQuestions: Question[]) => {
+  const saveQuestions = async (newQuestions: Question[]) => {
+    const previousQuestions = questions;
     setQuestions(newQuestions);
-    localStorage.setItem('pnle_questions', JSON.stringify(newQuestions));
+
+    try {
+      const savedQuestions = await saveSharedQuestions(newQuestions);
+      setQuestions(savedQuestions);
+      setQuestionBankError('');
+      return true;
+    } catch (e) {
+      console.error("Error saving shared questions:", e);
+      setQuestions(previousQuestions);
+      setQuestionBankError('The shared question bank could not save this change. Please check the Vercel Blob setup and try again.');
+      alert("Unable to save the shared question bank. Please check the Vercel Blob setup and try again.");
+      return false;
+    }
   };
 
   const saveHistory = (newHistory: ExamHistoryItem[]) => {
@@ -144,35 +183,43 @@ export default function App() {
   };
 
   // CRUD actions
-  const handleQuestionsImported = (imported: Question[]) => {
+  const handleQuestionsImported = async (imported: Question[]) => {
     const merged = [...questions, ...imported];
-    saveQuestions(merged);
-    alert(`Successfully imported ${imported.length} new questions!`);
-    setActiveTab('bank');
+    const didSave = await saveQuestions(merged);
+    if (didSave) {
+      alert(`Successfully imported ${imported.length} new questions!`);
+      setActiveTab('bank');
+    }
   };
 
-  const handleAddQuestion = (q: Question) => {
+  const handleAddQuestion = async (q: Question) => {
     const updated = [q, ...questions];
-    saveQuestions(updated);
+    await saveQuestions(updated);
   };
 
-  const handleEditQuestion = (q: Question) => {
+  const handleEditQuestion = async (q: Question) => {
     const updated = questions.map(item => item.id === q.id ? q : item);
-    saveQuestions(updated);
+    await saveQuestions(updated);
   };
 
-  const handleDeleteQuestion = (id: string) => {
+  const handleDeleteQuestion = async (id: string) => {
     const updated = questions.filter(item => item.id !== id);
-    saveQuestions(updated);
+    const didSave = await saveQuestions(updated);
+
+    if (!didSave) {
+      return;
+    }
 
     // Auto clear revisions associated with deleted question
     const updatedRevs = revisionRequests.filter(r => r.questionId !== id);
     saveRevisions(updatedRevs);
   };
 
-  const handleClearBank = () => {
-    saveQuestions([]);
-    saveRevisions([]); // Clear reports too
+  const handleClearBank = async () => {
+    const didSave = await saveQuestions([]);
+    if (didSave) {
+      saveRevisions([]); // Clear reports too
+    }
   };
 
   // Reset Progress Handlers
@@ -310,6 +357,17 @@ export default function App() {
       {/* Main body container */}
       <main style={{ flex: 1, padding: '32px 0' }}>
         <div className="container">
+          {isQuestionBankLoading && (
+            <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
+              Loading shared question bank...
+            </div>
+          )}
+
+          {questionBankError && (
+            <div className="card" style={{ marginBottom: '16px', padding: '16px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+              {questionBankError}
+            </div>
+          )}
 
           {activeTab === 'dashboard' && (
             <Dashboard
