@@ -1,0 +1,25 @@
+export default async function handler(req, res) {
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    return res.status(500).json({ error: 'Missing Supabase env vars' });
+  }
+
+  try {
+    const response = await fetch(url + '/rest/v1/kv_store?select=key&limit=1', {
+      headers: {
+        'apikey': key,
+        'Authorization': 'Bearer ' + key,
+      },
+    });
+
+    return res.status(200).json({
+      status: 'alive',
+      supabase: response.ok ? 'connected' : 'error ' + response.status,
+      pinged_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
