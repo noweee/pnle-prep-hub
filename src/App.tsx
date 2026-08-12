@@ -13,6 +13,7 @@ import AdminUsersPanel from './components/AdminUsersPanel';
 import { fetchCurrentUser } from './lib/authApi';
 import { fetchSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
 import { clearScores, fetchScores, saveScore } from './lib/scoreApi';
+import { getQuestionFingerprint } from './lib/questionFingerprint';
 
 const INITIAL_SAMPLE_QUESTIONS: Question[] = [
   {
@@ -223,10 +224,29 @@ export default function App() {
 
   // CRUD actions
   const handleQuestionsImported = async (imported: Question[]) => {
-    const merged = [...questions, ...imported];
+    const existingFingerprints = new Set(questions.map(getQuestionFingerprint));
+    const uniqueImported: Question[] = [];
+
+    imported.forEach((question) => {
+      const fingerprint = getQuestionFingerprint(question);
+      if (existingFingerprints.has(fingerprint)) {
+        return;
+      }
+
+      existingFingerprints.add(fingerprint);
+      uniqueImported.push(question);
+    });
+
+    if (uniqueImported.length === 0) {
+      alert("No new questions were imported because every valid row already exists in the question bank.");
+      return;
+    }
+
+    const merged = [...questions, ...uniqueImported];
     const didSave = await saveQuestions(merged);
     if (didSave) {
-      alert(`Successfully imported ${imported.length} new questions!`);
+      const skippedCount = imported.length - uniqueImported.length;
+      alert(`Successfully imported ${uniqueImported.length} new questions.${skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.` : ''}`);
       setActiveTab('bank');
     }
   };
@@ -459,7 +479,7 @@ export default function App() {
           )}
 
           {activeTab === 'upload' && canManageQuestions && (
-            <ExcelUpload onQuestionsImported={handleQuestionsImported} />
+            <ExcelUpload existingQuestions={questions} onQuestionsImported={handleQuestionsImported} />
           )}
 
           {activeTab === 'users' && currentUser?.isAdmin && (

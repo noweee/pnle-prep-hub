@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Upload, FileText, Download, CheckCircle, AlertTriangle, PlusCircle } from 'lucide-react';
 import { Question } from '../types';
+import { getParsedQuestionFingerprint, getQuestionFingerprint } from '../lib/questionFingerprint';
 
 interface ExcelUploadProps {
+  existingQuestions: Question[];
   onQuestionsImported: (questions: Question[]) => void;
 }
 
@@ -20,9 +22,10 @@ interface ParsedRow {
   situationText: string;
   warnings: string[];
   isValid: boolean;
+  duplicateReason: string;
 }
 
-export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
+export default function ExcelUpload({ existingQuestions, onQuestionsImported }: ExcelUploadProps) {
   const [dragging, setDragging] = useState(false);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState<string>('');
@@ -103,6 +106,9 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
           return;
         }
 
+        const existingFingerprints = new Set(existingQuestions.map(getQuestionFingerprint));
+        const uploadedFingerprints = new Map<string, number>();
+
         const rows: ParsedRow[] = jsonData.map((row: any, index) => {
           const rowNum = index + 2; // header is row 1
           
@@ -144,6 +150,30 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
             }
           }
 
+          const fingerprint = getParsedQuestionFingerprint({
+            question,
+            optA,
+            optB,
+            optC,
+            optD
+          });
+          const firstSeenRow = uploadedFingerprints.get(fingerprint);
+          let duplicateReason = '';
+
+          if (question && existingFingerprints.has(fingerprint)) {
+            duplicateReason = 'Already exists in question bank';
+          } else if (question && firstSeenRow !== undefined) {
+            duplicateReason = `Duplicate of uploaded row ${firstSeenRow}`;
+          }
+
+          if (question && firstSeenRow === undefined) {
+            uploadedFingerprints.set(fingerprint, rowNum);
+          }
+
+          if (duplicateReason) {
+            warnings.push(duplicateReason);
+          }
+
           return {
             rowNum,
             question,
@@ -156,6 +186,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
             category: category || 'General Nursing Practice',
             situationText,
             warnings,
+            duplicateReason,
             isValid: warnings.length === 0 && !!question && !!optA && !!optB && !!optC && !!optD && !!cleanedAnswer
           };
         });
@@ -274,6 +305,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
 
   const validCount = parsedRows.filter(r => r.isValid).length;
   const invalidCount = parsedRows.length - validCount;
+  const duplicateCount = parsedRows.filter(r => r.duplicateReason).length;
 
   return (
     <div className="flex flex-col gap-3">
@@ -386,7 +418,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
                 Validation Summary
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-                Found {parsedRows.length} questions. {validCount} valid and ready to import, {invalidCount} have warnings.
+                Found {parsedRows.length} questions. {validCount} valid and ready to import, {invalidCount} have warnings. {duplicateCount > 0 ? `${duplicateCount} duplicate${duplicateCount === 1 ? '' : 's'} will be skipped.` : ''}
               </p>
             </div>
             <button
