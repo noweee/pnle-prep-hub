@@ -416,7 +416,7 @@ export default function App() {
                 <span>Loading Account</span>
               </span>
             ) : (
-              <AccountPanel user={currentUser} onUserChange={handleUserChange} />
+              <AccountPanel user={currentUser} history={history} onUserChange={handleUserChange} />
             )}
 
             <button
