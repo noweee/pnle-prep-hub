@@ -11,6 +11,7 @@ interface AccountPanelProps {
   questions: Question[];
   answeredQuestionIds: string[];
   onResetAnsweredQuestions: (category: string) => Promise<void>;
+  onRefreshAccountStats: () => Promise<void>;
   onUserChange: (user: User | null) => void;
 }
 
@@ -135,6 +136,7 @@ export default function AccountPanel({
   questions,
   answeredQuestionIds,
   onResetAnsweredQuestions,
+  onRefreshAccountStats,
   onUserChange,
 }: AccountPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -144,6 +146,7 @@ export default function AccountPanel({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const [isRefreshingProfile, setIsRefreshingProfile] = useState(false);
   const [resettingSubject, setResettingSubject] = useState('');
   const profileStats = useMemo(() => getProfileStats(history), [history]);
   const questionCoverage = useMemo(
@@ -202,6 +205,19 @@ export default function AccountPanel({
     }
   };
 
+  const handleOpenProfile = async () => {
+    setIsOpen(true);
+    setIsRefreshingProfile(true);
+
+    try {
+      await onRefreshAccountStats();
+    } catch (err) {
+      console.error("Error refreshing profile stats:", err);
+    } finally {
+      setIsRefreshingProfile(false);
+    }
+  };
+
   const handleSignOut = async () => {
     setIsBusy(true);
     try {
@@ -244,6 +260,12 @@ export default function AccountPanel({
               </div>
             </div>
           </div>
+
+          {isRefreshingProfile && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '12px' }}>
+              Refreshing latest rankings...
+            </p>
+          )}
 
           <div className="profile-stats-grid">
             <div className="profile-stat-card">
@@ -441,7 +463,7 @@ export default function AccountPanel({
 
     return (
       <>
-        <button className="nav-button" onClick={() => setIsOpen(true)} title="Open profile">
+        <button className="nav-button" onClick={handleOpenProfile} title="Open profile">
           <UserRound size={16} />
           <span>{user.name}{!user.isEnabled ? ' (Pending)' : ''}</span>
         </button>

@@ -37,8 +37,9 @@ async function parseScoresResponse(response: Response): Promise<ScoreSyncResult>
 }
 
 export async function fetchScores(): Promise<ScoreSyncResult> {
-  const response = await fetch('/api/scores', {
+  const response = await fetch(`/api/scores?ts=${Date.now()}`, {
     credentials: 'include',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
     },
@@ -51,6 +52,7 @@ export async function saveScore(score: Omit<ExamHistoryItem, 'id' | 'date'>): Pr
   const response = await fetch('/api/scores', {
     method: 'POST',
     credentials: 'include',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -65,6 +67,7 @@ export async function clearScores(): Promise<ScoreSyncResult> {
   const response = await fetch('/api/scores', {
     method: 'DELETE',
     credentials: 'include',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
     },

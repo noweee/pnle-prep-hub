@@ -181,6 +181,26 @@ export default function App() {
     document.documentElement.classList.toggle('dark', nextDark);
   };
 
+  const refreshAccountStats = async () => {
+    if (!currentUser) return;
+
+    if (!currentUser.isEnabled && !currentUser.isAdmin) {
+      setHistory([]);
+      setRankingStats(null);
+      setAnsweredQuestionIds([]);
+      return;
+    }
+
+    const [scoreData, questionProgress] = await Promise.all([
+      fetchScores(),
+      fetchQuestionProgress(),
+    ]);
+    setHistory(scoreData.scores);
+    setRankingStats(scoreData.ranking);
+    setAnsweredQuestionIds(questionProgress);
+    setScoreSyncError('');
+  };
+
   const saveQuestions = async (newQuestions: Question[]) => {
     const previousQuestions = questions;
     setQuestions(newQuestions);
@@ -480,6 +500,7 @@ export default function App() {
                 questions={questions}
                 answeredQuestionIds={answeredQuestionIds}
                 onResetAnsweredQuestions={handleResetAnsweredQuestions}
+                onRefreshAccountStats={refreshAccountStats}
                 onUserChange={handleUserChange}
               />
             )}

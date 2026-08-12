@@ -14,8 +14,9 @@ async function parseProgressResponse(response: Response): Promise<string[]> {
 }
 
 export async function fetchQuestionProgress(): Promise<string[]> {
-  const response = await fetch('/api/progress', {
+  const response = await fetch(`/api/progress?ts=${Date.now()}`, {
     credentials: 'include',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
     },
@@ -28,6 +29,7 @@ export async function markAnsweredQuestions(questionIds: string[]): Promise<stri
   const response = await fetch('/api/progress', {
     method: 'POST',
     credentials: 'include',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -42,6 +44,7 @@ export async function resetAnsweredQuestions(questionIds: string[]): Promise<str
   const response = await fetch('/api/progress', {
     method: 'DELETE',
     credentials: 'include',
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
