@@ -1,22 +1,23 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, Award, BarChart3, LogIn, LogOut, TrendingUp, UserPlus, UserRound } from 'lucide-react';
-import { ExamHistoryItem, User } from '../types';
+import { ExamHistoryItem, RankingStats, User } from '../types';
 import { registerAccount, signIn, signOut } from '../lib/authApi';
 
 interface AccountPanelProps {
   user: User | null;
   history: ExamHistoryItem[];
+  ranking: RankingStats | null;
   onUserChange: (user: User | null) => void;
 }
 
-function getRankBand(avgScore: number, examsTaken: number) {
+function getPerformanceLevel(avgScore: number, examsTaken: number) {
   if (examsTaken === 0) return 'Unranked';
-  if (avgScore >= 90) return 'Elite Review Rank';
-  if (avgScore >= 85) return 'Advanced Rank';
-  if (avgScore >= 75) return 'Board-Ready Rank';
-  if (avgScore >= 60) return 'Building Rank';
-  return 'Foundation Rank';
+  if (avgScore >= 90) return 'Elite Review';
+  if (avgScore >= 85) return 'Advanced';
+  if (avgScore >= 75) return 'Board-Ready';
+  if (avgScore >= 60) return 'Building';
+  return 'Foundation';
 }
 
 function getRecentTrend(history: ExamHistoryItem[]) {
@@ -71,14 +72,14 @@ function getProfileStats(history: ExamHistoryItem[]) {
     avgScore,
     passRate,
     bestScore,
-    rankBand: getRankBand(avgScore, examsTaken),
+    performanceLevel: getPerformanceLevel(avgScore, examsTaken),
     trend: getRecentTrend(history),
     bestSubject: subjectStats[0]?.subject || 'No subject data yet',
     subjectStats,
   };
 }
 
-export default function AccountPanel({ user, history, onUserChange }: AccountPanelProps) {
+export default function AccountPanel({ user, history, ranking, onUserChange }: AccountPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
@@ -87,6 +88,9 @@ export default function AccountPanel({ user, history, onUserChange }: AccountPan
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const profileStats = useMemo(() => getProfileStats(history), [history]);
+  const rankLabel = ranking?.rank
+    ? `#${ranking.rank} of ${ranking.totalRankedUsers}`
+    : 'Unranked';
 
   const resetForm = () => {
     setName('');
@@ -162,7 +166,7 @@ export default function AccountPanel({ user, history, onUserChange }: AccountPan
             <div className="profile-stat-card">
               <Award size={18} />
               <span>Rank</span>
-              <strong>{profileStats.rankBand}</strong>
+              <strong>{rankLabel}</strong>
             </div>
             <div className="profile-stat-card">
               <Activity size={18} />
@@ -191,6 +195,10 @@ export default function AccountPanel({ user, history, onUserChange }: AccountPan
             <div>
               <span>Exams Taken</span>
               <strong>{profileStats.examsTaken}</strong>
+            </div>
+            <div>
+              <span>Level</span>
+              <strong>{profileStats.performanceLevel}</strong>
             </div>
             <div>
               <span>Strongest Subject</span>

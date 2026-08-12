@@ -1,21 +1,37 @@
-import { ExamHistoryItem } from '../types';
+import { ExamHistoryItem, RankingStats } from '../types';
 
 interface ScoresResponse {
   scores?: ExamHistoryItem[];
+  ranking?: RankingStats;
   error?: string;
 }
 
-async function parseScoresResponse(response: Response): Promise<ExamHistoryItem[]> {
+export interface ScoreSyncResult {
+  scores: ExamHistoryItem[];
+  ranking: RankingStats;
+}
+
+const emptyRanking: RankingStats = {
+  rank: null,
+  totalRankedUsers: 0,
+  averageScore: 0,
+  examsTaken: 0,
+};
+
+async function parseScoresResponse(response: Response): Promise<ScoreSyncResult> {
   const data = (await response.json()) as ScoresResponse;
 
   if (!response.ok) {
     throw new Error(data.error || 'Unable to sync scores.');
   }
 
-  return Array.isArray(data.scores) ? data.scores : [];
+  return {
+    scores: Array.isArray(data.scores) ? data.scores : [],
+    ranking: data.ranking || emptyRanking,
+  };
 }
 
-export async function fetchScores(): Promise<ExamHistoryItem[]> {
+export async function fetchScores(): Promise<ScoreSyncResult> {
   const response = await fetch('/api/scores', {
     credentials: 'include',
     headers: {
@@ -26,7 +42,7 @@ export async function fetchScores(): Promise<ExamHistoryItem[]> {
   return parseScoresResponse(response);
 }
 
-export async function saveScore(score: Omit<ExamHistoryItem, 'id' | 'date'>): Promise<ExamHistoryItem[]> {
+export async function saveScore(score: Omit<ExamHistoryItem, 'id' | 'date'>): Promise<ScoreSyncResult> {
   const response = await fetch('/api/scores', {
     method: 'POST',
     credentials: 'include',
@@ -40,7 +56,7 @@ export async function saveScore(score: Omit<ExamHistoryItem, 'id' | 'date'>): Pr
   return parseScoresResponse(response);
 }
 
-export async function clearScores(): Promise<ExamHistoryItem[]> {
+export async function clearScores(): Promise<ScoreSyncResult> {
   const response = await fetch('/api/scores', {
     method: 'DELETE',
     credentials: 'include',

@@ -965,7 +965,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .profile-summary-row {
   display: grid;
-  grid-template-columns: 120px 120px 1fr;
+  grid-template-columns: 112px 112px 120px 1fr;
   gap: 12px;
   padding: 14px;
   border-radius: var(--radius-sm);

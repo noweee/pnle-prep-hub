@@ -45,6 +45,13 @@ export interface ExamHistoryItem {
   mode: 'qna' | 'exam';
 }
 
+export interface RankingStats {
+  rank: number | null;
+  totalRankedUsers: number;
+  averageScore: number;
+  examsTaken: number;
+}
+
 export interface User {
   id: string;
   name: string;

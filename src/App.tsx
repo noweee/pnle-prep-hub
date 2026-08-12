@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, FileSpreadsheet, Play, LayoutDashboard, Sun, Moon, Lock, Users } from 'lucide-react';
-import { Question, ExamHistoryItem, QuizSession, RevisionRequest, User } from './types';
+import { Question, ExamHistoryItem, QuizSession, RankingStats, RevisionRequest, User } from './types';
 
 // Importing components
 import Dashboard from './components/Dashboard';
@@ -82,6 +82,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAccountLoading, setIsAccountLoading] = useState(true);
   const [scoreSyncError, setScoreSyncError] = useState('');
+  const [rankingStats, setRankingStats] = useState<RankingStats | null>(null);
   const [revisionRequests, setRevisionRequests] = useState<RevisionRequest[]>([]);
   const [completedSession, setCompletedSession] = useState<QuizSession | null>(null);
 
@@ -137,10 +138,12 @@ export default function App() {
 
         if (user) {
           if (user.isEnabled || user.isAdmin) {
-            const scores = await fetchScores();
-            setHistory(scores);
+            const scoreData = await fetchScores();
+            setHistory(scoreData.scores);
+            setRankingStats(scoreData.ranking);
           } else {
             setHistory([]);
+            setRankingStats(null);
           }
           localStorage.removeItem('pnle_history');
         }
@@ -195,6 +198,7 @@ export default function App() {
 
     if (!user) {
       setHistory([]);
+      setRankingStats(null);
       if (activeTab === 'bank' || activeTab === 'upload' || activeTab === 'users') {
         setActiveTab('dashboard');
       }
@@ -203,14 +207,17 @@ export default function App() {
 
     try {
       if (user.isEnabled || user.isAdmin) {
-        const scores = await fetchScores();
-        setHistory(scores);
+        const scoreData = await fetchScores();
+        setHistory(scoreData.scores);
+        setRankingStats(scoreData.ranking);
       } else {
         setHistory([]);
+        setRankingStats(null);
       }
     } catch (e) {
       console.error("Error loading scores:", e);
       setHistory([]);
+      setRankingStats(null);
       setScoreSyncError('Could not load score history for this account.');
     }
   };
@@ -289,8 +296,9 @@ export default function App() {
     }
 
     try {
-      const scores = await clearScores();
-      setHistory(scores);
+      const scoreData = await clearScores();
+      setHistory(scoreData.scores);
+      setRankingStats(scoreData.ranking);
       setScoreSyncError('');
       alert("All exam history logs, average scores, and practice metrics have been cleared successfully.");
     } catch (e) {
@@ -330,7 +338,7 @@ export default function App() {
 
     if (currentUser) {
       try {
-        const scores = await saveScore({
+        const scoreData = await saveScore({
           categoryName: historyItem.categoryName,
           questionCount: historyItem.questionCount,
           correctCount: historyItem.correctCount,
@@ -338,7 +346,8 @@ export default function App() {
           timeSpentSeconds: historyItem.timeSpentSeconds,
           mode: historyItem.mode
         });
-        setHistory(scores);
+        setHistory(scoreData.scores);
+        setRankingStats(scoreData.ranking);
         setScoreSyncError('');
       } catch (e) {
         console.error("Error saving score:", e);
@@ -416,7 +425,7 @@ export default function App() {
                 <span>Loading Account</span>
               </span>
             ) : (
-              <AccountPanel user={currentUser} history={history} onUserChange={handleUserChange} />
+              <AccountPanel user={currentUser} history={history} ranking={rankingStats} onUserChange={handleUserChange} />
             )}
 
             <button
