@@ -72,3 +72,15 @@ export async function importSharedQuestions(questions: Question[]): Promise<Ques
     skippedCount: Number(data.skippedCount || 0),
   };
 }
+
+export async function clearSharedQuestions(): Promise<Question[]> {
+  const response = await fetch('/api/questions', {
+    method: 'DELETE',
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  return parseQuestionBankResponse(response);
+}

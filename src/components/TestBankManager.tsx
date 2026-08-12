@@ -139,7 +139,7 @@ export default function TestBankManager({
   };
 
   const handleClearAll = () => {
-    if (confirm("WARNING: This will permanently delete ALL questions in your test bank. Are you sure you want to proceed?")) {
+    if (confirm("WARNING: This will permanently delete ALL uploaded and manually added questions from the shared test bank. Are you sure you want to proceed?")) {
       onClearBank();
     }
   };

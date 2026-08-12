@@ -37,8 +37,13 @@ export default async function handler(request, response) {
       return sendJson(response, { questions: sortQuestions(Array.isArray(questions) ? questions : []) });
     }
 
+    if (request.method === 'DELETE') {
+      await writeJsonBlob('questions', []);
+      return sendJson(response, { questions: [] });
+    }
+
     if (request.method !== 'PUT' && request.method !== 'POST') {
-      response.setHeader('Allow', 'GET, PUT, POST');
+      response.setHeader('Allow', 'GET, PUT, POST, DELETE');
       return sendJson(response, { error: 'Method not allowed.' }, 405);
     }
 

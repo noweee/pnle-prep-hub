@@ -11,7 +11,7 @@ import ExamResults from './components/ExamResults';
 import AccountPanel from './components/AccountPanel';
 import AdminUsersPanel from './components/AdminUsersPanel';
 import { fetchCurrentUser } from './lib/authApi';
-import { fetchSharedQuestions, importSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
+import { clearSharedQuestions, fetchSharedQuestions, importSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
 import { fetchQuestionProgress, markAnsweredQuestions, resetAnsweredQuestions } from './lib/progressApi';
 import { clearScores, fetchScores, saveScore } from './lib/scoreApi';
 import { getQuestionFingerprint } from './lib/questionFingerprint';
@@ -110,28 +110,8 @@ export default function App() {
 
     const loadQuestionBank = async () => {
       try {
-        const cachedQs = localStorage.getItem('pnle_questions');
-        let localQuestions: Question[] = [];
-
-        if (cachedQs) {
-          try {
-            const parsedQuestions = JSON.parse(cachedQs);
-            localQuestions = Array.isArray(parsedQuestions) ? parsedQuestions : [];
-          } catch (e) {
-            console.error("Error reading local questions for migration:", e);
-          }
-        }
-
         const sharedQuestions = await fetchSharedQuestions();
-
-        if (sharedQuestions.length > 0) {
-          setQuestions(sharedQuestions);
-        } else {
-          const seedQuestions = localQuestions.length > 0 ? localQuestions : INITIAL_SAMPLE_QUESTIONS;
-          const seededQuestions = await saveSharedQuestions(seedQuestions);
-          setQuestions(seededQuestions.length > 0 ? seededQuestions : seedQuestions);
-        }
-
+        setQuestions(sharedQuestions);
         localStorage.removeItem('pnle_questions');
         setQuestionBankError('');
       } catch (e) {
@@ -337,9 +317,23 @@ export default function App() {
   };
 
   const handleClearBank = async () => {
-    const didSave = await saveQuestions([]);
-    if (didSave) {
-      saveRevisions([]); // Clear reports too
+    const previousQuestions = questions;
+    setQuestions([]);
+
+    try {
+      const clearedQuestions = await clearSharedQuestions();
+      setQuestions(clearedQuestions);
+      setAnsweredQuestionIds([]);
+      localStorage.removeItem('pnle_questions');
+      setQuestionBankError('');
+      saveRevisions([]);
+      alert("The shared question bank has been cleared. Previously uploaded questionnaire questions will not reload.");
+    } catch (e) {
+      console.error("Error clearing shared question bank:", e);
+      setQuestions(previousQuestions);
+      const message = e instanceof Error ? e.message : 'Unable to clear the shared question bank.';
+      setQuestionBankError(message);
+      alert(message);
     }
   };
 
