@@ -417,6 +417,11 @@ export default function ExamSimulator({ questions, answeredQuestionIds, onQuizSu
           <span className="quiz-category-label">
             {q.category || 'General'}
           </span>
+          {(q.isPastBoard || q.sourceExam) && (
+            <span className="badge badge-warning" style={{ whiteSpace: 'nowrap' }}>
+              Past Board{q.sourceExam ? `: ${q.sourceExam}` : ''}
+            </span>
+          )}
         </div>
 
         {/* Row 2: timer + action buttons */}
@@ -461,6 +466,14 @@ export default function ExamSimulator({ questions, answeredQuestionIds, onQuizSu
           <h3 style={{ fontSize: '1.25rem', lineHeight: '1.5', fontWeight: '600', marginBottom: '24px' }}>
             {q.questionText}
           </h3>
+
+          {(q.isPastBoard || q.sourceExam) && (
+            <div style={{ marginBottom: '16px' }}>
+              <span className="badge badge-warning">
+                Past Board Exam{q.sourceExam ? `: ${q.sourceExam}` : ''}
+              </span>
+            </div>
+          )}
 
           {q.situationText && (
             <div style={{

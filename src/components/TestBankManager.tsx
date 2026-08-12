@@ -39,6 +39,7 @@ export default function TestBankManager({
   const [formAnswer, setFormAnswer] = useState<'A' | 'B' | 'C' | 'D'>('A');
   const [formRationale, setFormRationale] = useState('');
   const [formCategory, setFormCategory] = useState('');
+  const [formSourceExam, setFormSourceExam] = useState('');
 
   // Extract all categories in the database
   const categories = ['all', ...Array.from(new Set(questions.map(q => q.category || 'General Nursing Practice')))];
@@ -56,6 +57,7 @@ export default function TestBankManager({
     setFormAnswer('A');
     setFormRationale('');
     setFormCategory('NP I: Foundation of Professional Nursing Practice');
+    setFormSourceExam('');
     setIsAddOpen(true);
   };
 
@@ -70,6 +72,7 @@ export default function TestBankManager({
     setFormAnswer(q.correctAnswer);
     setFormRationale(q.rationale || '');
     setFormCategory(q.category || 'General Nursing Practice');
+    setFormSourceExam(q.sourceExam || '');
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -90,7 +93,9 @@ export default function TestBankManager({
         optionD: formD,
         correctAnswer: formAnswer,
         rationale: formRationale,
-        category: formCategory
+        category: formCategory,
+        sourceExam: formSourceExam.trim(),
+        isPastBoard: Boolean(formSourceExam.trim())
       });
       setEditingQuestion(null);
     } else {
@@ -104,7 +109,9 @@ export default function TestBankManager({
         optionD: formD,
         correctAnswer: formAnswer,
         rationale: formRationale,
-        category: formCategory
+        category: formCategory,
+        sourceExam: formSourceExam.trim(),
+        isPastBoard: Boolean(formSourceExam.trim())
       });
       setIsAddOpen(false);
     }
@@ -278,6 +285,11 @@ export default function TestBankManager({
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           {q.category || 'General Nursing Practice'}
                         </span>
+                        {(q.isPastBoard || q.sourceExam) && (
+                          <span className="badge badge-warning" style={{ alignSelf: 'flex-start', fontSize: '0.72rem' }}>
+                            Past Board{q.sourceExam ? `: ${q.sourceExam}` : ''}
+                          </span>
+                        )}
                         {q.situationText && (
                           <span style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>
                             Situation-linked item
@@ -347,6 +359,16 @@ export default function TestBankManager({
                           </div>
                           <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
                             {q.situationText}
+                          </p>
+                        </div>
+                      )}
+                      {(q.isPastBoard || q.sourceExam) && (
+                        <div className="rationale-container" style={{ marginTop: '16px', borderLeftColor: 'var(--warning)' }}>
+                          <div className="rationale-title">
+                            Past Board Exam
+                          </div>
+                          <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                            {q.sourceExam || 'Marked as a past board question.'}
                           </p>
                         </div>
                       )}
@@ -470,6 +492,17 @@ export default function TestBankManager({
                   onChange={(e) => setFormQuestion(e.target.value)}
                   placeholder="Enter the question stem..."
                   required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Past Board Source / Exam Date</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={formSourceExam}
+                  onChange={(e) => setFormSourceExam(e.target.value)}
+                  placeholder="Example: December 2008 Past Boards"
                 />
               </div>
 

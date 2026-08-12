@@ -232,6 +232,11 @@ export default function ExamResults({ session, onBackToDashboard, onRestartQuiz,
                   <div className="flex justify-between align-center" style={{ marginBottom: '10px' }}>
                     <span className="badge badge-primary">Q {index + 1}</span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {(q.isPastBoard || q.sourceExam) && (
+                        <span className="badge badge-warning">
+                          Past Board{q.sourceExam ? `: ${q.sourceExam}` : ''}
+                        </span>
+                      )}
                       <button
                         className="btn btn-secondary"
                         onClick={() => setSelectedReportQuestion(q)}

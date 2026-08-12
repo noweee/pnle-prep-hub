@@ -10,6 +10,8 @@ export interface Question {
   category?: string; // e.g. "NP I: Foundation of Professional Nursing Practice"
   situationText?: string;
   situationId?: string;
+  sourceExam?: string; // e.g. "December 2008 Past Boards"
+  isPastBoard?: boolean;
 }
 
 export interface QuizConfig {

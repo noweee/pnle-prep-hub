@@ -20,6 +20,7 @@ interface ParsedRow {
   rationale: string;
   category: string;
   situationText: string;
+  sourceExam: string;
   warnings: string[];
   isValid: boolean;
   duplicateReason: string;
@@ -29,6 +30,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
   const [dragging, setDragging] = useState(false);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState<string>('');
+  const [questionnaireSource, setQuestionnaireSource] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -121,6 +123,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
           const rationale = findValue(row, ['rationale', 'explanation', 'exp', 'reason', 'why']);
           const category = findValue(row, ['category', 'subject', 'practicearea', 'nursingpractice', 'np', 'nursing_practice']);
           const situationText = findValue(row, ['situationtext', 'situation', 'case', 'scenario', 'stemcontext', 'situation_text']);
+          const sourceExam = findValue(row, ['sourceexam', 'source', 'examdate', 'boardexam', 'pastboard', 'pastboards', 'questionnairefrom']) || questionnaireSource.trim();
 
           const warnings: string[] = [];
 
@@ -185,6 +188,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
             rationale,
             category: category || 'General Nursing Practice',
             situationText,
+            sourceExam,
             warnings,
             duplicateReason,
             isValid: warnings.length === 0 && !!question && !!optA && !!optB && !!optC && !!optD && !!cleanedAnswer
@@ -216,7 +220,9 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
         rationale: row.rationale,
         category: row.category,
         situationText: row.situationText,
-        situationId: makeSituationId(row.category, row.situationText)
+        situationId: makeSituationId(row.category, row.situationText),
+        sourceExam: row.sourceExam || questionnaireSource.trim(),
+        isPastBoard: Boolean(row.sourceExam || questionnaireSource.trim())
       })));
 
     if (validQuestions.length === 0) {
@@ -227,15 +233,17 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
     onQuestionsImported(validQuestions);
     setParsedRows([]);
     setFileName('');
+    setQuestionnaireSource('');
   };
 
   // Generate and download a sample excel file
   const downloadSampleTemplate = () => {
-    const headers = ['Category', 'Situation Text', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Rationale'];
+    const headers = ['Category', 'Situation Text', 'Source Exam', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Rationale'];
     const sampleData = [
       [
         'NP III: Care of Clients with Physiologic and Psychosocial Alterations',
         'A client is admitted with acute abdominal pain and abnormal pancreatic enzymes.',
+        'December 2008 Past Boards',
         'A client is admitted with a diagnosis of acute pancreatitis. Which of the following laboratory values should the nurse expect to be elevated?',
         'Serum calcium',
         'Serum amylase',
@@ -247,6 +255,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
       [
         'NP II: Community Health Nursing and Mother-Child Care',
         'The community health nurse plans population-level health promotion activities.',
+        'December 2008 Past Boards',
         'Which of the following is the primary responsibility of a community health nurse?',
         'Providing acute bedside care in hospitals',
         'Performing specialized minor surgical procedures',
@@ -258,6 +267,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
       [
         'NP I: Foundation of Professional Nursing Practice',
         'A faculty member reviews legal qualifications in Philippine nursing education.',
+        'December 2008 Past Boards',
         'According to the Philippine Nursing Act of 2002 (RA 9173), what is the minimum educational requirement for a Dean of a College of Nursing?',
         'Bachelor of Science in Nursing',
         'Master of Arts in Nursing (or Master of Science in Nursing)',
@@ -269,6 +279,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
       [
         'NP IV: Care of Clients with Physiologic and Psychosocial Alterations',
         'The nurse monitors a client while blood products are infusing.',
+        'December 2008 Past Boards',
         'A nurse is caring for a client receiving blood transfusion. The client suddenly develops chills, fever, and low back pain. Which action should the nurse take first?',
         'Slow down the transfusion rate to 50 mL/hour',
         'Administer oral acetaminophen to relieve fever and pain',
@@ -280,6 +291,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
       [
         'NP V: Care of Clients with Physiologic and Psychosocial Alterations',
         'A patient receives antidepressant therapy and needs discharge teaching.',
+        'December 2008 Past Boards',
         'A patient with major depressive disorder is prescribed an SSRI. The nurse should instruct the patient to monitor for which critical, life-threatening syndrome?',
         'Serotonin syndrome (agitation, fever, tremors, hyperreflexia)',
         'Hypertensive crisis triggered by tyramine-rich foods (aged cheese)',
@@ -328,6 +340,20 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
           accept=".xlsx, .xls, .csv"
           style={{ display: 'none' }}
         />
+
+        <div className="form-group" style={{ marginBottom: '20px' }}>
+          <label className="form-label">Questionnaire Source / Exam Date</label>
+          <input
+            type="text"
+            className="form-control"
+            value={questionnaireSource}
+            onChange={(event) => setQuestionnaireSource(event.target.value)}
+            placeholder="Example: December 2008 Past Boards"
+          />
+          <span style={{ display: 'block', marginTop: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            This label will mark imported items as past-board questions. A Source Exam column in the file can override it per row.
+          </span>
+        </div>
         
         <div
           className={`upload-dropzone ${dragging ? 'dragging' : ''}`}
@@ -382,6 +408,11 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
                   <td><strong>Situation Text</strong></td>
                   <td>Shared scenario for related questions</td>
                   <td>Optional. Questions with identical situation text are kept together during shuffling.</td>
+                </tr>
+                <tr>
+                  <td><strong>Source Exam</strong></td>
+                  <td>Where the questions came from</td>
+                  <td>Optional. Example: <em>December 2008 Past Boards</em>. You can also use the upload field above.</td>
                 </tr>
                 <tr>
                   <td><strong>Question</strong></td>
@@ -439,6 +470,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
                   <th style={{ width: '80px' }}>Row</th>
                   <th>Question Preview</th>
                   <th>Category</th>
+                  <th>Source</th>
                   <th>Situation</th>
                   <th style={{ width: '80px' }}>Answer</th>
                   <th>Status & Diagnostic Info</th>
@@ -452,6 +484,13 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
                       {row.question || <span style={{ color: 'var(--danger)', fontStyle: 'italic' }}>[Empty Question]</span>}
                     </td>
                     <td>{row.category}</td>
+                    <td>
+                      {row.sourceExam ? (
+                        <span className="badge badge-warning">{row.sourceExam}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>None</span>
+                      )}
+                    </td>
                     <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {row.situationText || <span style={{ color: 'var(--text-muted)' }}>None</span>}
                     </td>
