@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { LogIn, LogOut, UserPlus, UserRound } from 'lucide-react';
 import { User } from '../types';
 import { registerAccount, signIn, signOut } from '../lib/authApi';
@@ -71,6 +72,92 @@ export default function AccountPanel({ user, onUserChange }: AccountPanelProps) 
     );
   }
 
+  const accountModal = isOpen ? createPortal(
+    <div className="account-modal-overlay">
+      <div className="account-modal-panel">
+        <div className="modal-header">
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+            {mode === 'register' ? <UserPlus size={18} /> : <LogIn size={18} />}
+            {mode === 'register' ? 'Create Student Account' : 'Student Login'}
+          </h3>
+          <button className="modal-close" onClick={() => { setIsOpen(false); resetForm(); }}>
+            X
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {mode === 'register' && (
+            <div className="form-group" style={{ marginBottom: '14px' }}>
+              <label className="form-label">Name</label>
+              <input
+                className="form-control"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+          )}
+
+          <div className="form-group" style={{ marginBottom: '14px' }}>
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              autoFocus
+              required
+            />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label className="form-label">Password</label>
+            <input
+              type="password"
+              className="form-control"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="At least 6 characters"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              required
+            />
+          </div>
+
+          {error && (
+            <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '12px' }}>
+              {error}
+            </p>
+          )}
+
+          {mode === 'register' && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '12px' }}>
+              New accounts are pending by default. An admin must enable access before questions can be opened.
+            </p>
+          )}
+
+          <button type="submit" className="btn btn-primary" disabled={isBusy} style={{ width: '100%', padding: '12px' }}>
+            {isBusy ? 'Please wait...' : mode === 'register' ? 'Create Account' : 'Sign In'}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ width: '100%', marginTop: '12px' }}
+          onClick={() => {
+            setMode(mode === 'register' ? 'login' : 'register');
+            setError('');
+          }}
+        >
+          {mode === 'register' ? 'Already have an account? Sign in' : 'Need an account? Register'}
+        </button>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <>
       <button className="nav-button" onClick={() => setIsOpen(true)}>
@@ -78,87 +165,7 @@ export default function AccountPanel({ user, onUserChange }: AccountPanelProps) 
         <span>Student Login</span>
       </button>
 
-      {isOpen && (
-        <div className="modal-overlay account-modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '420px' }}>
-            <div className="modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
-                {mode === 'register' ? <UserPlus size={18} /> : <LogIn size={18} />}
-                {mode === 'register' ? 'Create Student Account' : 'Student Login'}
-              </h3>
-              <button className="modal-close" onClick={() => { setIsOpen(false); resetForm(); }}>
-                X
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              {mode === 'register' && (
-                <div className="form-group" style={{ marginBottom: '14px' }}>
-                  <label className="form-label">Name</label>
-                  <input
-                    className="form-control"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    placeholder="Your name"
-                  />
-                </div>
-              )}
-
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Password</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="At least 6 characters"
-                  required
-                />
-              </div>
-
-              {error && (
-                <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '12px' }}>
-                  {error}
-                </p>
-              )}
-
-              {mode === 'register' && (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '12px' }}>
-                  New accounts are pending by default. An admin must enable access before questions can be opened.
-                </p>
-              )}
-
-              <button type="submit" className="btn btn-primary" disabled={isBusy} style={{ width: '100%', padding: '12px' }}>
-                {isBusy ? 'Please wait...' : mode === 'register' ? 'Create Account' : 'Sign In'}
-              </button>
-            </form>
-
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ width: '100%', marginTop: '12px' }}
-              onClick={() => {
-                setMode(mode === 'register' ? 'login' : 'register');
-                setError('');
-              }}
-            >
-              {mode === 'register' ? 'Already have an account? Sign in' : 'Need an account? Register'}
-            </button>
-          </div>
-        </div>
-      )}
+      {accountModal}
     </>
   );
 }
