@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, Award, BarChart3, ListChecks, LogIn, LogOut, RotateCcw, TrendingUp, UserPlus, UserRound } from 'lucide-react';
-import { ExamHistoryItem, Question, RankingStats, User } from '../types';
+import { Activity, Award, BarChart3, CalendarDays, ListChecks, LogIn, LogOut, RotateCcw, TrendingUp, Trophy, UserPlus, UserRound } from 'lucide-react';
+import { ExamHistoryItem, Question, RankingPeriodStats, RankingStats, User } from '../types';
 import { registerAccount, signIn, signOut } from '../lib/authApi';
 
 interface AccountPanelProps {
@@ -116,6 +116,18 @@ function getQuestionCoverage(questions: Question[], answeredQuestionIds: string[
   };
 }
 
+function formatRank(period?: RankingPeriodStats) {
+  return period?.rank ? `#${period.rank} of ${period.totalRankedUsers}` : 'Unranked';
+}
+
+function formatRankDetails(period?: RankingPeriodStats) {
+  if (!period || !period.examsTaken) {
+    return 'No saved attempts yet';
+  }
+
+  return `${period.correctAnswers}/${period.questionsAnswered} correct • ${period.accuracy}% accuracy`;
+}
+
 export default function AccountPanel({
   user,
   history,
@@ -141,6 +153,12 @@ export default function AccountPanel({
   const rankLabel = ranking?.rank
     ? `#${ranking.rank} of ${ranking.totalRankedUsers}`
     : 'Unranked';
+  const rankingPeriods = [
+    { label: 'Today', value: ranking?.daily },
+    { label: '7 Days', value: ranking?.weekly },
+    { label: '30 Days', value: ranking?.monthly },
+    { label: 'All-Time', value: ranking?.allTime },
+  ];
 
   const resetForm = () => {
     setName('');
@@ -253,7 +271,7 @@ export default function AccountPanel({
             <div className="profile-stat-card">
               <ListChecks size={18} />
               <span>Questions Answered</span>
-              <strong>{questionCoverage.answeredPercent}%</strong>
+              <strong>{questionCoverage.answeredCount}/{questionCoverage.totalQuestions}</strong>
             </div>
           </div>
 
@@ -271,9 +289,60 @@ export default function AccountPanel({
               <strong>{profileStats.performanceLevel}</strong>
             </div>
             <div>
+              <span>Ranking Points</span>
+              <strong>{ranking?.rankingScore || 0}</strong>
+            </div>
+            <div>
               <span>Strongest Subject</span>
               <strong>{profileStats.bestSubject}</strong>
             </div>
+          </div>
+
+          <div className="profile-section">
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Trophy size={16} />
+              Rankings
+            </h4>
+            <div className="profile-rank-period-grid">
+              {rankingPeriods.map((period) => (
+                <div key={period.label} className="profile-rank-card">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CalendarDays size={14} />
+                    <span>{period.label}</span>
+                  </div>
+                  <strong>{formatRank(period.value)}</strong>
+                  <small>{formatRankDetails(period.value)}</small>
+                  <small>{period.value?.rankingScore || 0} points</small>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Award size={16} />
+              Subject Rankings
+            </h4>
+            {!ranking?.subjects || ranking.subjects.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                Complete a subject-specific practice exam to build subject rankings.
+              </p>
+            ) : (
+              <div className="profile-subject-list">
+                {ranking.subjects.slice(0, 8).map((subject) => (
+                  <div key={subject.subject} className="profile-subject-row">
+                    <div className="profile-subject-label">
+                      <strong title={subject.subject}>{subject.subject}</strong>
+                      <span>{formatRankDetails(subject)}</span>
+                    </div>
+                    <div className="profile-subject-meter">
+                      <div style={{ width: `${Math.max(4, subject.accuracy)}%` }} />
+                    </div>
+                    <span className="badge badge-info">{formatRank(subject)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="profile-section">

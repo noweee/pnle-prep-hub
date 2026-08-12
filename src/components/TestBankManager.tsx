@@ -323,6 +323,16 @@ export default function TestBankManager({
 
                   {isExpanded && (
                     <div className="accordion-content">
+                      {q.situationText && (
+                        <div className="rationale-container" style={{ marginBottom: '16px', borderLeftColor: 'var(--info)' }}>
+                          <div className="rationale-title">
+                            Situation
+                          </div>
+                          <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                            {q.situationText}
+                          </p>
+                        </div>
+                      )}
                       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
                         <div className={`choice-btn ${q.correctAnswer === 'A' ? 'correct' : ''}`} style={{ cursor: 'default', margin: 0 }}>
                           <span className="choice-letter">A</span>
@@ -349,16 +359,6 @@ export default function TestBankManager({
                           </div>
                           <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
                             {q.rationale}
-                          </p>
-                        </div>
-                      )}
-                      {q.situationText && (
-                        <div className="rationale-container" style={{ marginTop: '16px', borderLeftColor: 'var(--info)' }}>
-                          <div className="rationale-title">
-                            Situation
-                          </div>
-                          <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
-                            {q.situationText}
                           </p>
                         </div>
                       )}

@@ -253,6 +253,23 @@ export default function ExamResults({ session, onBackToDashboard, onRestartQuiz,
                     </div>
                   </div>
 
+                  {q.situationText && (
+                    <div style={{
+                      marginBottom: '12px',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)'
+                    }}>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Situation
+                      </span>
+                      <p style={{ color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                        {q.situationText}
+                      </p>
+                    </div>
+                  )}
+
                   <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px', lineHeight: '1.4' }}>
                     {q.questionText}
                   </h4>
@@ -362,6 +379,16 @@ export default function ExamResults({ session, onBackToDashboard, onRestartQuiz,
             </div>
             
             <form onSubmit={handleSendRevision}>
+              {selectedReportQuestion.situationText && (
+                <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Situation
+                  </span>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 500, lineHeight: 1.4 }}>
+                    {selectedReportQuestion.situationText}
+                  </p>
+                </div>
+              )}
               <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '4px' }}>
                   Question Stem

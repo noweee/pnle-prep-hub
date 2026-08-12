@@ -463,18 +463,6 @@ export default function ExamSimulator({ questions, answeredQuestionIds, onQuizSu
             </span>
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', lineHeight: '1.5', fontWeight: '600', marginBottom: '24px' }}>
-            {q.questionText}
-          </h3>
-
-          {(q.isPastBoard || q.sourceExam) && (
-            <div style={{ marginBottom: '16px' }}>
-              <span className="badge badge-warning">
-                Past Board Exam{q.sourceExam ? `: ${q.sourceExam}` : ''}
-              </span>
-            </div>
-          )}
-
           {q.situationText && (
             <div style={{
               marginBottom: '20px',
@@ -489,6 +477,18 @@ export default function ExamSimulator({ questions, answeredQuestionIds, onQuizSu
               <p style={{ color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
                 {q.situationText}
               </p>
+            </div>
+          )}
+
+          <h3 style={{ fontSize: '1.25rem', lineHeight: '1.5', fontWeight: '600', marginBottom: '24px' }}>
+            {q.questionText}
+          </h3>
+
+          {(q.isPastBoard || q.sourceExam) && (
+            <div style={{ marginBottom: '16px' }}>
+              <span className="badge badge-warning">
+                Past Board Exam{q.sourceExam ? `: ${q.sourceExam}` : ''}
+              </span>
             </div>
           )}
 
@@ -676,6 +676,22 @@ export default function ExamSimulator({ questions, answeredQuestionIds, onQuizSu
             </div>
             
             <form onSubmit={handleSendRevision}>
+              {q.situationText && (
+                <div style={{
+                  background: 'var(--bg-primary)',
+                  padding: '12px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '16px'
+                }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Situation
+                  </span>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 500, lineHeight: 1.4 }}>
+                    {q.situationText}
+                  </p>
+                </div>
+              )}
               <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', marginBottom: '4px' }}>
                   Question Stem

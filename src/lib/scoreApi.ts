@@ -16,6 +16,11 @@ const emptyRanking: RankingStats = {
   totalRankedUsers: 0,
   averageScore: 0,
   examsTaken: 0,
+  rankingScore: 0,
+  questionsAnswered: 0,
+  correctAnswers: 0,
+  accuracy: 0,
+  passRate: 0,
 };
 
 async function parseScoresResponse(response: Response): Promise<ScoreSyncResult> {

@@ -47,11 +47,37 @@ export interface ExamHistoryItem {
   mode: 'qna' | 'exam';
 }
 
+export interface RankingPeriodStats {
+  rank: number | null;
+  totalRankedUsers: number;
+  rankingScore: number;
+  examsTaken: number;
+  questionsAnswered: number;
+  correctAnswers: number;
+  averageScore: number;
+  accuracy: number;
+  passRate: number;
+}
+
+export interface SubjectRankingStats extends RankingPeriodStats {
+  subject: string;
+}
+
 export interface RankingStats {
   rank: number | null;
   totalRankedUsers: number;
   averageScore: number;
   examsTaken: number;
+  rankingScore?: number;
+  questionsAnswered?: number;
+  correctAnswers?: number;
+  accuracy?: number;
+  passRate?: number;
+  daily?: RankingPeriodStats;
+  weekly?: RankingPeriodStats;
+  monthly?: RankingPeriodStats;
+  allTime?: RankingPeriodStats;
+  subjects?: SubjectRankingStats[];
 }
 
 export interface User {

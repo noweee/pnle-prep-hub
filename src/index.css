@@ -965,7 +965,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .profile-summary-row {
   display: grid;
-  grid-template-columns: 112px 112px 120px 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 12px;
   padding: 14px;
   border-radius: var(--radius-sm);
@@ -991,6 +991,34 @@ h1, h2, h3, h4, h5, h6 {
   border-top: 1px solid var(--border-color);
   padding-top: 16px;
   margin-top: 16px;
+}
+
+.profile-rank-period-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 12px;
+}
+
+.profile-rank-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-rank-card span,
+.profile-rank-card small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.profile-rank-card strong {
+  color: var(--text-primary);
+  font-size: 1rem;
 }
 
 .profile-subject-list {

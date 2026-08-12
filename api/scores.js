@@ -10,10 +10,48 @@ function readBody(request) {
   return typeof request.body === 'object' && request.body !== null ? request.body : {};
 }
 
-function getUserRanking(scores, userId) {
+function emptyRankingPeriod() {
+  return {
+    rank: null,
+    totalRankedUsers: 0,
+    rankingScore: 0,
+    examsTaken: 0,
+    questionsAnswered: 0,
+    correctAnswers: 0,
+    averageScore: 0,
+    accuracy: 0,
+    passRate: 0,
+  };
+}
+
+function getPeriodStart(period) {
+  const now = new Date();
+  if (period === 'daily') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  }
+  if (period === 'weekly') {
+    return now.getTime() - 1000 * 60 * 60 * 24 * 7;
+  }
+  if (period === 'monthly') {
+    return now.getTime() - 1000 * 60 * 60 * 24 * 30;
+  }
+  return 0;
+}
+
+function scoreBelongsToSubject(score, subject) {
+  if (!subject) return true;
+  if (subject === 'All Subjects') return score.categoryName === 'all';
+  return score.categoryName === subject;
+}
+
+function getRankingPeriod(scores, userId, period = 'allTime', subject = '') {
   const byUser = new Map();
+  const startTime = getPeriodStart(period);
 
   scores.forEach((score) => {
+    if (new Date(score.date).getTime() < startTime) return;
+    if (!scoreBelongsToSubject(score, subject)) return;
+
     const scoreUserId = String(score.userId || '');
     if (!scoreUserId) return;
 
@@ -21,10 +59,21 @@ function getUserRanking(scores, userId) {
       userId: scoreUserId,
       examsTaken: 0,
       scoreTotal: 0,
+      questionsAnswered: 0,
+      correctAnswers: 0,
+      passedCount: 0,
     };
+
+    const questionCount = Number(score.questionCount || 0);
+    const correctCount = Number(score.correctCount || 0);
 
     existing.examsTaken += 1;
     existing.scoreTotal += Number(score.scorePercent || 0);
+    existing.questionsAnswered += questionCount;
+    existing.correctAnswers += correctCount;
+    if (Number(score.scorePercent || 0) >= 75) {
+      existing.passedCount += 1;
+    }
     byUser.set(scoreUserId, existing);
   });
 
@@ -32,10 +81,27 @@ function getUserRanking(scores, userId) {
     .map((item) => ({
       userId: item.userId,
       examsTaken: item.examsTaken,
+      questionsAnswered: item.questionsAnswered,
+      correctAnswers: item.correctAnswers,
       averageScore: item.examsTaken > 0 ? Math.round(item.scoreTotal / item.examsTaken) : 0,
+      accuracy: item.questionsAnswered > 0 ? Math.round((item.correctAnswers / item.questionsAnswered) * 100) : 0,
+      passRate: item.examsTaken > 0 ? Math.round((item.passedCount / item.examsTaken) * 100) : 0,
+    }))
+    .map((item) => ({
+      ...item,
+      rankingScore: Math.round(
+        (item.correctAnswers * 10)
+        + (item.questionsAnswered * 2)
+        + (item.averageScore * 4)
+        + (item.accuracy * 3)
+        + (item.passRate * 2)
+        + (item.examsTaken * 5)
+      ),
     }))
     .sort((a, b) => {
-      if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+      if (b.rankingScore !== a.rankingScore) return b.rankingScore - a.rankingScore;
+      if (b.correctAnswers !== a.correctAnswers) return b.correctAnswers - a.correctAnswers;
+      if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
       if (b.examsTaken !== a.examsTaken) return b.examsTaken - a.examsTaken;
       return a.userId.localeCompare(b.userId);
     });
@@ -43,11 +109,39 @@ function getUserRanking(scores, userId) {
   const userIndex = rankedUsers.findIndex((item) => item.userId === userId);
   const userRank = userIndex >= 0 ? rankedUsers[userIndex] : null;
 
+  if (!userRank) return emptyRankingPeriod();
+
   return {
     rank: userIndex >= 0 ? userIndex + 1 : null,
     totalRankedUsers: rankedUsers.length,
-    averageScore: userRank?.averageScore || 0,
-    examsTaken: userRank?.examsTaken || 0,
+    rankingScore: userRank.rankingScore,
+    examsTaken: userRank.examsTaken,
+    questionsAnswered: userRank.questionsAnswered,
+    correctAnswers: userRank.correctAnswers,
+    averageScore: userRank.averageScore,
+    accuracy: userRank.accuracy,
+    passRate: userRank.passRate,
+  };
+}
+
+function getUserRanking(scores, userId) {
+  const allTime = getRankingPeriod(scores, userId, 'allTime');
+  const subjects = Array.from(new Set(scores.map((score) => score.categoryName === 'all' ? 'All Subjects' : score.categoryName)))
+    .filter(Boolean)
+    .map((subject) => ({
+      subject,
+      ...getRankingPeriod(scores, userId, 'allTime', subject),
+    }))
+    .filter((subjectRanking) => subjectRanking.examsTaken > 0)
+    .sort((a, b) => (a.rank || 999999) - (b.rank || 999999) || b.rankingScore - a.rankingScore);
+
+  return {
+    ...allTime,
+    daily: getRankingPeriod(scores, userId, 'daily'),
+    weekly: getRankingPeriod(scores, userId, 'weekly'),
+    monthly: getRankingPeriod(scores, userId, 'monthly'),
+    allTime,
+    subjects,
   };
 }
 
