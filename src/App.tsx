@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, FileSpreadsheet, Play, LayoutDashboard, Sun, Moon, Lock, Unlock, X, Users } from 'lucide-react';
+import { BookOpen, FileSpreadsheet, Play, LayoutDashboard, Sun, Moon, Lock, Users } from 'lucide-react';
 import { Question, ExamHistoryItem, QuizSession, RevisionRequest, User } from './types';
 
 // Importing components
@@ -84,15 +84,9 @@ export default function App() {
   const [revisionRequests, setRevisionRequests] = useState<RevisionRequest[]>([]);
   const [completedSession, setCompletedSession] = useState<QuizSession | null>(null);
 
-  // Admin Privileges
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
-  const [passcodeInput, setPasscodeInput] = useState('');
-  const [passcodeError, setPasscodeError] = useState('');
-
   // Theme state
   const [darkMode, setDarkMode] = useState(true);
-  const canManageQuestions = Boolean(isAdminMode || currentUser?.isAdmin);
+  const canManageQuestions = Boolean(currentUser?.isAdmin);
 
   // Load state on mount
   useEffect(() => {
@@ -200,7 +194,7 @@ export default function App() {
 
     if (!user) {
       setHistory([]);
-      if (activeTab === 'users') {
+      if (activeTab === 'bank' || activeTab === 'upload' || activeTab === 'users') {
         setActiveTab('dashboard');
       }
       return;
@@ -220,7 +214,7 @@ export default function App() {
     }
   };
 
-  const canAccessQuestions = Boolean(currentUser?.isEnabled || currentUser?.isAdmin || isAdminMode);
+  const canAccessQuestions = Boolean(currentUser?.isEnabled || currentUser?.isAdmin);
 
   const saveRevisions = (newRevisions: RevisionRequest[]) => {
     setRevisionRequests(newRevisions);
@@ -296,28 +290,6 @@ export default function App() {
   const handleDismissRevision = (id: string) => {
     const updated = revisionRequests.filter(r => r.id !== id);
     saveRevisions(updated);
-  };
-
-  // Passcode verification
-  const handleVerifyPasscode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passcodeInput === '7324514321') {
-      setIsAdminMode(true);
-      setIsPasscodeOpen(false);
-      setPasscodeInput('');
-      setPasscodeError('');
-      alert("Admin Mode unlocked. Access to Question Bank and Imports granted.");
-    } else {
-      setPasscodeError("Invalid passcode. Please try again.");
-    }
-  };
-
-  const handleLockAdmin = () => {
-    setIsAdminMode(false);
-    if (activeTab === 'bank' || activeTab === 'upload' || activeTab === 'users') {
-      setActiveTab('dashboard');
-    }
-    alert("Admin privileges locked.");
   };
 
   // Quiz submission callback
@@ -419,25 +391,12 @@ export default function App() {
               <span>Simulator</span>
             </button>
 
-            {/* Admin toggle lock */}
             {isAccountLoading ? (
               <span className="nav-button" style={{ cursor: 'default' }}>
                 <span>Loading Account</span>
               </span>
             ) : (
               <AccountPanel user={currentUser} onUserChange={handleUserChange} />
-            )}
-
-            {isAdminMode ? (
-              <button className="nav-button" onClick={handleLockAdmin} style={{ color: 'var(--success)' }}>
-                <Unlock size={16} />
-                <span>Admin Unlocked</span>
-              </button>
-            ) : (
-              <button className="nav-button" onClick={() => setIsPasscodeOpen(true)}>
-                <Lock size={16} />
-                <span>Admin Login</span>
-              </button>
             )}
 
             <button
@@ -477,7 +436,7 @@ export default function App() {
               questions={canAccessQuestions ? questions : []}
               history={history}
               user={currentUser}
-              isAdminMode={canManageQuestions}
+              canManageQuestions={canManageQuestions}
               onNavigate={(tab) => {
                 if (tab === 'quiz') setActiveTab('quiz');
                 else if (tab === 'upload') setActiveTab('upload');
@@ -536,56 +495,6 @@ export default function App() {
 
         </div>
       </main>
-
-      {/* Admin Passcode Modal */}
-      {isPasscodeOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
-                <Lock size={18} style={{ color: 'var(--primary)' }} />
-                Admin Authentication
-              </h3>
-              <button className="modal-close" onClick={() => { setIsPasscodeOpen(false); setPasscodeInput(''); setPasscodeError(''); }}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleVerifyPasscode}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Enter Passcode to Unlock Panel</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  placeholder="Enter admin passcode"
-                  value={passcodeInput}
-                  onChange={(e) => setPasscodeInput(e.target.value)}
-                  autoFocus
-                  required
-                />
-                {passcodeError && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: '4px', display: 'block' }}>
-                    {passcodeError}
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => { setIsPasscodeOpen(false); setPasscodeInput(''); setPasscodeError(''); }}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Unlock
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Love Dedication Footer */}
       <footer className="love-footer">

@@ -6,12 +6,12 @@ interface DashboardProps {
   questions: Question[];
   history: ExamHistoryItem[];
   user: User | null;
-  isAdminMode: boolean;
+  canManageQuestions: boolean;
   onNavigate: (tab: 'dashboard' | 'bank' | 'upload' | 'quiz') => void;
   onClearHistory: () => void;
 }
 
-export default function Dashboard({ questions, history, user, isAdminMode, onNavigate, onClearHistory }: DashboardProps) {
+export default function Dashboard({ questions, history, user, canManageQuestions, onNavigate, onClearHistory }: DashboardProps) {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   
   // Stats calculations
@@ -112,7 +112,7 @@ export default function Dashboard({ questions, history, user, isAdminMode, onNav
           Quick Review Actions
         </h3>
         <div className="grid" style={{ 
-          gridTemplateColumns: isAdminMode ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr', 
+          gridTemplateColumns: canManageQuestions ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr', 
           gap: '16px' 
         }}>
           <button className="btn btn-primary" onClick={() => onNavigate('quiz')} style={{ padding: '16px', height: '100%' }}>
@@ -120,7 +120,7 @@ export default function Dashboard({ questions, history, user, isAdminMode, onNav
             Launch Exam Simulator
           </button>
           
-          {isAdminMode && (
+          {canManageQuestions && (
             <>
               <button className="btn btn-secondary" onClick={() => onNavigate('upload')} style={{ padding: '16px', height: '100%' }}>
                 <FileSpreadsheet size={18} style={{ color: 'var(--primary)' }} />
