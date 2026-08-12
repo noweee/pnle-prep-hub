@@ -17,6 +17,7 @@ interface ParsedRow {
   answer: string;
   rationale: string;
   category: string;
+  situationText: string;
   warnings: string[];
   isValid: boolean;
 }
@@ -61,6 +62,25 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
     return matchKey ? String(row[matchKey]).trim() : '';
   };
 
+  const makeSituationId = (category: string, situationText: string) => {
+    if (!situationText.trim()) return '';
+
+    const source = `${category} ${situationText}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return `situation-${source.slice(0, 80)}`;
+  };
+
+  const sortQuestions = (items: Question[]) => {
+    return [...items].sort((a, b) => {
+      const categoryCompare = (a.category || '').localeCompare(b.category || '');
+      if (categoryCompare !== 0) return categoryCompare;
+
+      const situationCompare = (a.situationText || '').localeCompare(b.situationText || '');
+      if (situationCompare !== 0) return situationCompare;
+
+      return a.questionText.localeCompare(b.questionText);
+    });
+  };
+
   const processFile = (file: File) => {
     setFileName(file.name);
     setIsParsing(true);
@@ -94,6 +114,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
           const answer = findValue(row, ['answer', 'correctanswer', 'correct', 'key', 'correctchoice', 'ans', 'correct_answer']);
           const rationale = findValue(row, ['rationale', 'explanation', 'exp', 'reason', 'why']);
           const category = findValue(row, ['category', 'subject', 'practicearea', 'nursingpractice', 'np', 'nursing_practice']);
+          const situationText = findValue(row, ['situationtext', 'situation', 'case', 'scenario', 'stemcontext', 'situation_text']);
 
           const warnings: string[] = [];
 
@@ -133,6 +154,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
             answer: cleanedAnswer,
             rationale,
             category: category || 'General Nursing Practice',
+            situationText,
             warnings,
             isValid: warnings.length === 0 && !!question && !!optA && !!optB && !!optC && !!optD && !!cleanedAnswer
           };
@@ -150,7 +172,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
   };
 
   const handleImport = () => {
-    const validQuestions: Question[] = parsedRows
+    const validQuestions: Question[] = sortQuestions(parsedRows
       .filter(row => row.isValid)
       .map((row, idx) => ({
         id: `imported-${Date.now()}-${idx}-${row.rowNum}`,
@@ -161,8 +183,10 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
         optionD: row.optD,
         correctAnswer: row.answer as 'A' | 'B' | 'C' | 'D',
         rationale: row.rationale,
-        category: row.category
-      }));
+        category: row.category,
+        situationText: row.situationText,
+        situationId: makeSituationId(row.category, row.situationText)
+      })));
 
     if (validQuestions.length === 0) {
       alert("No valid questions found to import. Please check file formatting.");
@@ -176,57 +200,62 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
 
   // Generate and download a sample excel file
   const downloadSampleTemplate = () => {
-    const headers = ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Rationale', 'Category'];
+    const headers = ['Category', 'Situation Text', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Rationale'];
     const sampleData = [
       [
+        'NP III: Care of Clients with Physiologic and Psychosocial Alterations',
+        'A client is admitted with acute abdominal pain and abnormal pancreatic enzymes.',
         'A client is admitted with a diagnosis of acute pancreatitis. Which of the following laboratory values should the nurse expect to be elevated?',
         'Serum calcium',
         'Serum amylase',
         'Blood urea nitrogen',
         'Serum potassium',
         'B',
-        'Serum amylase and lipase are digestive enzymes produced by the pancreas. In acute pancreatitis, pancreatic cells are damaged, causing these enzymes to leak into the blood, resulting in elevated levels.',
-        'NP III: Care of Clients with Physiologic and Psychosocial Alterations'
+        'Serum amylase and lipase are digestive enzymes produced by the pancreas. In acute pancreatitis, pancreatic cells are damaged, causing these enzymes to leak into the blood, resulting in elevated levels.'
       ],
       [
+        'NP II: Community Health Nursing and Mother-Child Care',
+        'The community health nurse plans population-level health promotion activities.',
         'Which of the following is the primary responsibility of a community health nurse?',
         'Providing acute bedside care in hospitals',
         'Performing specialized minor surgical procedures',
         'Health promotion, disease prevention, and education in the community',
         'Administering complex chemotherapy treatments in outpatient clinics',
         'C',
-        'Community health nursing focuses on population-based health, where the primary emphasis is on promoting wellness and preventing disease through education, immunization, and community-wide safety campaigns.',
-        'NP II: Community Health Nursing and Mother-Child Care'
+        'Community health nursing focuses on population-based health, where the primary emphasis is on promoting wellness and preventing disease through education, immunization, and community-wide safety campaigns.'
       ],
       [
+        'NP I: Foundation of Professional Nursing Practice',
+        'A faculty member reviews legal qualifications in Philippine nursing education.',
         'According to the Philippine Nursing Act of 2002 (RA 9173), what is the minimum educational requirement for a Dean of a College of Nursing?',
         'Bachelor of Science in Nursing',
         'Master of Arts in Nursing (or Master of Science in Nursing)',
         'Doctor of Philosophy in Nursing Education',
         'Master of Science in Public Health Education',
         'B',
-        'Republic Act 9173 (Philippine Nursing Law) specifies that a Dean of a College of Nursing in the Philippines must hold a Master\'s degree in nursing (MAN/MSN) and have at least 5 years of teaching experience.',
-        'NP I: Foundation of Professional Nursing Practice'
+        'Republic Act 9173 (Philippine Nursing Law) specifies that a Dean of a College of Nursing in the Philippines must hold a Master\'s degree in nursing (MAN/MSN) and have at least 5 years of teaching experience.'
       ],
       [
+        'NP IV: Care of Clients with Physiologic and Psychosocial Alterations',
+        'The nurse monitors a client while blood products are infusing.',
         'A nurse is caring for a client receiving blood transfusion. The client suddenly develops chills, fever, and low back pain. Which action should the nurse take first?',
         'Slow down the transfusion rate to 50 mL/hour',
         'Administer oral acetaminophen to relieve fever and pain',
         'Stop the transfusion immediately',
         'Notify the attending physician and blood bank clerk',
         'C',
-        'Chills, fever, and low back pain indicate a potential acute hemolytic transfusion reaction. The immediate priority is to stop the transfusion to prevent further infusing of incompatible blood, which can cause renal failure.',
-        'NP IV: Care of Clients with Physiologic and Psychosocial Alterations'
+        'Chills, fever, and low back pain indicate a potential acute hemolytic transfusion reaction. The immediate priority is to stop the transfusion to prevent further infusing of incompatible blood, which can cause renal failure.'
       ],
       [
+        'NP V: Care of Clients with Physiologic and Psychosocial Alterations',
+        'A patient receives antidepressant therapy and needs discharge teaching.',
         'A patient with major depressive disorder is prescribed an SSRI. The nurse should instruct the patient to monitor for which critical, life-threatening syndrome?',
         'Serotonin syndrome (agitation, fever, tremors, hyperreflexia)',
         'Hypertensive crisis triggered by tyramine-rich foods (aged cheese)',
         'Neuroleptic malignant syndrome (rigidity, hyperpyrexia)',
         'Agranulocytosis (sudden drop in white blood cell count)',
         'A',
-        'SSRI side effects include Serotonin Syndrome, characterized by cognitive alterations (agitation, confusion), autonomic hyperactivity (sweating, fever), and neuromuscular abnormalities (tremors, hyperreflexia).',
-        'NP V: Care of Clients with Physiologic and Psychosocial Alterations'
+        'SSRI side effects include Serotonin Syndrome, characterized by cognitive alterations (agitation, confusion), autonomic hyperactivity (sweating, fever), and neuromuscular abnormalities (tremors, hyperreflexia).'
       ]
     ];
 
@@ -313,6 +342,16 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
               </thead>
               <tbody>
                 <tr>
+                  <td><strong>Category</strong></td>
+                  <td>Board exam classification / subject</td>
+                  <td>e.g., <em>NP I: Foundations</em>, <em>NP III: Medical Surgical</em></td>
+                </tr>
+                <tr>
+                  <td><strong>Situation Text</strong></td>
+                  <td>Shared scenario for related questions</td>
+                  <td>Optional. Questions with identical situation text are kept together during shuffling.</td>
+                </tr>
+                <tr>
                   <td><strong>Question</strong></td>
                   <td>The question stem / question content</td>
                   <td>Any text string describing the question scenario</td>
@@ -325,17 +364,12 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
                 <tr>
                   <td><strong>Correct Answer</strong></td>
                   <td>The key indicating the correct answer choice</td>
-                  <td>Must be <code>A</code>, <code>B</code>, <code>C</code>, or <code>D</code> (or exact choice text)</td>
+                  <td>Must be <code>A</code>, <code>B</code>, <code>C</code>, or <code>D</code>. Rows without an answer are not imported.</td>
                 </tr>
                 <tr>
                   <td><strong>Rationale</strong></td>
                   <td>Critical explanation/nursing rationale (optional)</td>
                   <td>Text explaining the physiology, law, or priority basis</td>
-                </tr>
-                <tr>
-                  <td><strong>Category</strong></td>
-                  <td>Board exam classification / subject (optional)</td>
-                  <td>e.g., <em>NP I: Foundations</em>, <em>NP III: Medical Surgical</em></td>
                 </tr>
               </tbody>
             </table>
@@ -373,6 +407,7 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
                   <th style={{ width: '80px' }}>Row</th>
                   <th>Question Preview</th>
                   <th>Category</th>
+                  <th>Situation</th>
                   <th style={{ width: '80px' }}>Answer</th>
                   <th>Status & Diagnostic Info</th>
                 </tr>
@@ -385,6 +420,9 @@ export default function ExcelUpload({ onQuestionsImported }: ExcelUploadProps) {
                       {row.question || <span style={{ color: 'var(--danger)', fontStyle: 'italic' }}>[Empty Question]</span>}
                     </td>
                     <td>{row.category}</td>
+                    <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {row.situationText || <span style={{ color: 'var(--text-muted)' }}>None</span>}
+                    </td>
                     <td style={{ textAlign: 'center' }}>
                       {row.answer ? (
                         <span className="badge badge-primary">{row.answer}</span>

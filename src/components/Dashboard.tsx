@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { BookOpen, FileSpreadsheet, Play, Activity, CheckSquare, BarChart, Calendar, Award, AlertCircle } from 'lucide-react';
-import { Question, ExamHistoryItem } from '../types';
+import { Question, ExamHistoryItem, User } from '../types';
 
 interface DashboardProps {
   questions: Question[];
   history: ExamHistoryItem[];
+  user: User | null;
   isAdminMode: boolean;
   onNavigate: (tab: 'dashboard' | 'bank' | 'upload' | 'quiz') => void;
   onClearHistory: () => void;
 }
 
-export default function Dashboard({ questions, history, isAdminMode, onNavigate, onClearHistory }: DashboardProps) {
+export default function Dashboard({ questions, history, user, isAdminMode, onNavigate, onClearHistory }: DashboardProps) {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   
   // Stats calculations
@@ -51,10 +52,10 @@ export default function Dashboard({ questions, history, isAdminMode, onNavigate,
         }}
       >
         <h1 style={{ fontSize: '2.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>
-          PNLE Board Examination Portal
+          {user ? `Welcome back, ${user.name}` : 'PNLE Board Examination Portal'}
         </h1>
         <p style={{ fontSize: '1.05rem', opacity: 0.9, maxWidth: '600px', lineHeight: '1.6' }}>
-          Upload your review questionnaires, configure custom subject trials, and master clinical nursing rationales to secure your nursing license (RN).
+          Upload nursing board questionnaires, practice by category or situation, and track exam scores through your student account.
         </p>
       </div>
 
@@ -145,7 +146,7 @@ export default function Dashboard({ questions, history, isAdminMode, onNavigate,
             Question Breakdown by Subject
           </h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '16px' }}>
-            Current questionnaire count indexed in your local browser cache.
+            Current questionnaire count from the shared test bank.
           </p>
           
           {totalQuestions === 0 ? (
@@ -190,7 +191,7 @@ export default function Dashboard({ questions, history, isAdminMode, onNavigate,
             )}
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '16px' }}>
-            List of completed practice tests and scores.
+            {user ? 'Scores saved to your student account.' : 'Sign in before taking a quiz to save score history.'}
           </p>
 
           {examsTaken === 0 ? (

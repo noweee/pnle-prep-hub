@@ -65,14 +65,45 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
     return questions.filter(q => (q.category || 'General Nursing Practice') === cat).length;
   };
 
+  const shuffle = <T,>(items: T[]) => {
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const selectQuestionsBySituation = (availableQuestions: Question[], targetCount: number) => {
+    const grouped = new Map<string, Question[]>();
+
+    availableQuestions.forEach((question) => {
+      const groupKey = question.situationId || question.situationText || question.id;
+      grouped.set(groupKey, [...(grouped.get(groupKey) || []), question]);
+    });
+
+    const shuffledGroups = shuffle(Array.from(grouped.values()).map((group) => shuffle(group)));
+    const selected: Question[] = [];
+
+    for (const group of shuffledGroups) {
+      if (selected.length >= targetCount) break;
+
+      if (group.length > 1) {
+        selected.push(...group);
+      } else {
+        selected.push(group[0]);
+      }
+    }
+
+    return selected.slice(0, Math.max(targetCount, selected.length > targetCount ? selected.length : targetCount));
+  };
+
   const handleStartQuiz = () => {
     const filtered = config.category === 'all'
       ? [...questions]
       : questions.filter(q => (q.category || 'General Nursing Practice') === config.category);
 
-    // Shuffle and pick N questions
-    const shuffled = filtered.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, Math.min(config.questionCount, filtered.length));
+    const selected = selectQuestionsBySituation(filtered, Math.min(config.questionCount, filtered.length));
 
     if (selected.length === 0) {
       alert("No questions found in this category.");
@@ -402,6 +433,23 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
           <h3 style={{ fontSize: '1.25rem', lineHeight: '1.5', fontWeight: '600', marginBottom: '24px' }}>
             {q.questionText}
           </h3>
+
+          {q.situationText && (
+            <div style={{
+              marginBottom: '20px',
+              padding: '14px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)'
+            }}>
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Situation
+              </span>
+              <p style={{ color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                {q.situationText}
+              </p>
+            </div>
+          )}
 
           <div style={{ flex: 1 }}>
             {/* Option Choices */}

@@ -1,67 +1,40 @@
-import { get, put } from '@vercel/blob';
+import { readJsonBlob, sendJson, writeJsonBlob } from './_shared.js';
 
-const STORE_PATH = 'pnle-prep-hub/questions.json';
+function sortQuestions(questions) {
+  return [...questions].sort((a, b) => {
+    const categoryCompare = String(a.category || '').localeCompare(String(b.category || ''));
+    if (categoryCompare !== 0) return categoryCompare;
 
-function json(data, status = 200) {
-  return Response.json(data, {
-    status,
-    headers: {
-      'Cache-Control': 'no-store',
-    },
+    const situationCompare = String(a.situationText || '').localeCompare(String(b.situationText || ''));
+    if (situationCompare !== 0) return situationCompare;
+
+    return String(a.questionText || '').localeCompare(String(b.questionText || ''));
   });
 }
 
-async function readQuestions() {
+export default async function handler(request, response) {
   try {
-    const result = await get(STORE_PATH, { access: 'private' });
-
-    if (!result || result.statusCode !== 200 || !result.stream) {
-      return [];
+    if (request.method === 'GET') {
+      const questions = await readJsonBlob('questions', []);
+      return sendJson(response, { questions: sortQuestions(Array.isArray(questions) ? questions : []) });
     }
 
-    const text = await new Response(result.stream).text();
-    const parsed = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    if (error?.name === 'BlobNotFoundError') {
-      return [];
+    if (request.method !== 'PUT') {
+      response.setHeader('Allow', 'GET, PUT');
+      return sendJson(response, { error: 'Method not allowed.' }, 405);
     }
 
-    throw error;
-  }
-}
-
-async function writeQuestions(questions) {
-  await put(STORE_PATH, JSON.stringify(questions, null, 2), {
-    access: 'private',
-    allowOverwrite: true,
-    contentType: 'application/json',
-  });
-}
-
-export async function GET() {
-  try {
-    const questions = await readQuestions();
-    return json({ questions });
-  } catch (error) {
-    console.error('Unable to load shared question bank:', error);
-    return json({ error: 'Unable to load shared question bank.' }, 500);
-  }
-}
-
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const questions = body?.questions;
+    const questions = request.body?.questions;
 
     if (!Array.isArray(questions)) {
-      return json({ error: 'Request body must include a questions array.' }, 400);
+      return sendJson(response, { error: 'Request body must include a questions array.' }, 400);
     }
 
-    await writeQuestions(questions);
-    return json({ questions });
+    const sortedQuestions = sortQuestions(questions);
+    await writeJsonBlob('questions', sortedQuestions);
+    return sendJson(response, { questions: sortedQuestions });
   } catch (error) {
-    console.error('Unable to save shared question bank:', error);
-    return json({ error: 'Unable to save shared question bank.' }, 500);
+    console.error('Unable to sync shared question bank:', error);
+    return sendJson(response, { error: 'Unable to sync shared question bank.' }, 500);
   }
 }

@@ -8,6 +8,8 @@ export interface Question {
   correctAnswer: 'A' | 'B' | 'C' | 'D';
   rationale?: string;
   category?: string; // e.g. "NP I: Foundation of Professional Nursing Practice"
+  situationText?: string;
+  situationId?: string;
 }
 
 export interface QuizConfig {
@@ -41,6 +43,13 @@ export interface ExamHistoryItem {
   scorePercent: number;
   timeSpentSeconds: number;
   mode: 'qna' | 'exam';
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
 }
 
 export interface RevisionRequest {

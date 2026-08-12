@@ -278,6 +278,11 @@ export default function TestBankManager({
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           {q.category || 'General Nursing Practice'}
                         </span>
+                        {q.situationText && (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--primary)' }}>
+                            Situation-linked item
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -332,6 +337,16 @@ export default function TestBankManager({
                           </div>
                           <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
                             {q.rationale}
+                          </p>
+                        </div>
+                      )}
+                      {q.situationText && (
+                        <div className="rationale-container" style={{ marginTop: '16px', borderLeftColor: 'var(--info)' }}>
+                          <div className="rationale-title">
+                            Situation
+                          </div>
+                          <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                            {q.situationText}
                           </p>
                         </div>
                       )}

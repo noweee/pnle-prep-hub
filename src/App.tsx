@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, FileSpreadsheet, Play, LayoutDashboard, Sun, Moon, Lock, Unlock, X } from 'lucide-react';
-import { Question, ExamHistoryItem, QuizSession, RevisionRequest } from './types';
+import { Question, ExamHistoryItem, QuizSession, RevisionRequest, User } from './types';
 
 // Importing components
 import Dashboard from './components/Dashboard';
@@ -8,7 +8,10 @@ import ExcelUpload from './components/ExcelUpload';
 import TestBankManager from './components/TestBankManager';
 import ExamSimulator from './components/ExamSimulator';
 import ExamResults from './components/ExamResults';
+import AccountPanel from './components/AccountPanel';
+import { fetchCurrentUser } from './lib/authApi';
 import { fetchSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
+import { clearScores, fetchScores, saveScore } from './lib/scoreApi';
 
 const INITIAL_SAMPLE_QUESTIONS: Question[] = [
   {
@@ -74,6 +77,9 @@ export default function App() {
   const [isQuestionBankLoading, setIsQuestionBankLoading] = useState(true);
   const [questionBankError, setQuestionBankError] = useState('');
   const [history, setHistory] = useState<ExamHistoryItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAccountLoading, setIsAccountLoading] = useState(true);
+  const [scoreSyncError, setScoreSyncError] = useState('');
   const [revisionRequests, setRevisionRequests] = useState<RevisionRequest[]>([]);
   const [completedSession, setCompletedSession] = useState<QuizSession | null>(null);
 
@@ -127,15 +133,25 @@ export default function App() {
 
     loadQuestionBank();
 
-    // Load history
-    const cachedHistory = localStorage.getItem('pnle_history');
-    if (cachedHistory) {
+    const loadAccount = async () => {
       try {
-        setHistory(JSON.parse(cachedHistory));
+        const user = await fetchCurrentUser();
+        setCurrentUser(user);
+
+        if (user) {
+          const scores = await fetchScores();
+          setHistory(scores);
+          localStorage.removeItem('pnle_history');
+        }
       } catch (e) {
-        console.error("Error loading cached history:", e);
+        console.error("Error loading account:", e);
+        setScoreSyncError('Account score history could not be loaded. Sign in again if scoring does not update.');
+      } finally {
+        setIsAccountLoading(false);
       }
-    }
+    };
+
+    loadAccount();
 
     // Load revisions
     const cachedRevisions = localStorage.getItem('pnle_revisions');
@@ -172,9 +188,23 @@ export default function App() {
     }
   };
 
-  const saveHistory = (newHistory: ExamHistoryItem[]) => {
-    setHistory(newHistory);
-    localStorage.setItem('pnle_history', JSON.stringify(newHistory));
+  const handleUserChange = async (user: User | null) => {
+    setCurrentUser(user);
+    setScoreSyncError('');
+
+    if (!user) {
+      setHistory([]);
+      return;
+    }
+
+    try {
+      const scores = await fetchScores();
+      setHistory(scores);
+    } catch (e) {
+      console.error("Error loading scores:", e);
+      setHistory([]);
+      setScoreSyncError('Could not load score history for this account.');
+    }
   };
 
   const saveRevisions = (newRevisions: RevisionRequest[]) => {
@@ -223,9 +253,22 @@ export default function App() {
   };
 
   // Reset Progress Handlers
-  const handleClearHistory = () => {
-    saveHistory([]);
-    alert("All exam history logs, average scores, and practice metrics have been cleared successfully.");
+  const handleClearHistory = async () => {
+    if (!currentUser) {
+      alert("Please sign in to manage score history.");
+      return;
+    }
+
+    try {
+      const scores = await clearScores();
+      setHistory(scores);
+      setScoreSyncError('');
+      alert("All exam history logs, average scores, and practice metrics have been cleared successfully.");
+    } catch (e) {
+      console.error("Error clearing scores:", e);
+      setScoreSyncError('Could not clear score history. Please try again.');
+      alert("Could not clear score history. Please try again.");
+    }
   };
 
   // Revision Requests handlers
@@ -263,7 +306,7 @@ export default function App() {
   };
 
   // Quiz submission callback
-  const handleQuizSubmitted = (session: QuizSession) => {
+  const handleQuizSubmitted = async (session: QuizSession) => {
     const scorePct = Math.round((session.score! / session.questions.length) * 100);
     const elapsedSeconds = Math.round((session.endTime! - session.startTime) / 1000);
 
@@ -278,7 +321,28 @@ export default function App() {
       mode: session.config.mode
     };
 
-    saveHistory([...history, historyItem]);
+    if (currentUser) {
+      try {
+        const scores = await saveScore({
+          categoryName: historyItem.categoryName,
+          questionCount: historyItem.questionCount,
+          correctCount: historyItem.correctCount,
+          scorePercent: historyItem.scorePercent,
+          timeSpentSeconds: historyItem.timeSpentSeconds,
+          mode: historyItem.mode
+        });
+        setHistory(scores);
+        setScoreSyncError('');
+      } catch (e) {
+        console.error("Error saving score:", e);
+        setHistory([historyItem, ...history]);
+        setScoreSyncError('This score was shown locally but could not be saved to your account.');
+      }
+    } else {
+      setHistory([historyItem]);
+      setScoreSyncError('Sign in or create an account before your next exam to save score history.');
+    }
+
     setCompletedSession(session);
     setActiveTab('results');
   };
@@ -331,6 +395,14 @@ export default function App() {
             </button>
 
             {/* Admin toggle lock */}
+            {isAccountLoading ? (
+              <span className="nav-button" style={{ cursor: 'default' }}>
+                <span>Loading Account</span>
+              </span>
+            ) : (
+              <AccountPanel user={currentUser} onUserChange={handleUserChange} />
+            )}
+
             {isAdminMode ? (
               <button className="nav-button" onClick={handleLockAdmin} style={{ color: 'var(--success)' }}>
                 <Unlock size={16} />
@@ -369,10 +441,17 @@ export default function App() {
             </div>
           )}
 
+          {scoreSyncError && (
+            <div className="card" style={{ marginBottom: '16px', padding: '16px', borderColor: 'var(--warning)', color: 'var(--warning)' }}>
+              {scoreSyncError}
+            </div>
+          )}
+
           {activeTab === 'dashboard' && (
             <Dashboard
               questions={questions}
               history={history}
+              user={currentUser}
               isAdminMode={isAdminMode}
               onNavigate={(tab) => {
                 if (tab === 'quiz') setActiveTab('quiz');
