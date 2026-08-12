@@ -5,6 +5,7 @@ import {
   hashPassword,
   makeId,
   normalizeEmail,
+  normalizeUserAccess,
   publicUser,
   readJsonBlob,
   sendJson,
@@ -40,6 +41,7 @@ export default async function handler(request, response) {
     const email = normalizeEmail(body.email);
     const password = String(body.password || '');
     const users = await readJsonBlob('users', []);
+    const normalizedUsers = users.map((user) => normalizeUserAccess(user, users));
 
     if (!email || !password) {
       return sendJson(response, { error: 'Email and password are required.' }, 400);
@@ -50,17 +52,20 @@ export default async function handler(request, response) {
         return sendJson(response, { error: 'Password must be at least 6 characters.' }, 400);
       }
 
-      if (users.some((user) => user.email === email)) {
+      if (normalizedUsers.some((user) => user.email === email)) {
         return sendJson(response, { error: 'An account with this email already exists.' }, 409);
       }
 
       const passwordResult = hashPassword(password);
+      const access = normalizeUserAccess({ email }, normalizedUsers);
       const user = {
         id: makeId('user'),
         name: String(body.name || '').trim() || email.split('@')[0],
         email,
         passwordSalt: passwordResult.salt,
         passwordHash: passwordResult.hash,
+        isAdmin: access.isAdmin,
+        isEnabled: access.isAdmin,
         createdAt: new Date().toISOString(),
       };
 
@@ -73,7 +78,7 @@ export default async function handler(request, response) {
       });
     }
 
-    const user = users.find((item) => item.email === email);
+    const user = normalizedUsers.find((item) => item.email === email);
     if (!user || !verifyPassword(password, user)) {
       return sendJson(response, { error: 'Invalid email or password.' }, 401);
     }

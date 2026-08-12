@@ -61,7 +61,7 @@ export default function AccountPanel({ user, onUserChange }: AccountPanelProps) 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span className="nav-button" style={{ cursor: 'default' }}>
           <UserRound size={16} />
-          <span>{user.name}</span>
+          <span>{user.name}{!user.isEnabled ? ' (Pending)' : ''}</span>
         </span>
         <button className="nav-button" onClick={handleSignOut} disabled={isBusy}>
           <LogOut size={16} />
@@ -79,7 +79,7 @@ export default function AccountPanel({ user, onUserChange }: AccountPanelProps) 
       </button>
 
       {isOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay account-modal-overlay">
           <div className="modal-content" style={{ maxWidth: '420px' }}>
             <div className="modal-header">
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -131,6 +131,12 @@ export default function AccountPanel({ user, onUserChange }: AccountPanelProps) 
               {error && (
                 <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '12px' }}>
                   {error}
+                </p>
+              )}
+
+              {mode === 'register' && (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '12px' }}>
+                  New accounts are pending by default. An admin must enable access before questions can be opened.
                 </p>
               )}
 

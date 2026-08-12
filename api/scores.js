@@ -18,6 +18,10 @@ export default async function handler(request, response) {
       return sendJson(response, { error: 'Please sign in to track scores.' }, 401);
     }
 
+    if (!user.isEnabled && !user.isAdmin) {
+      return sendJson(response, { error: 'Your account is pending admin approval.' }, 403);
+    }
+
     const scores = await readJsonBlob('scores', []);
 
     if (request.method === 'GET') {

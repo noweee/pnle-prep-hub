@@ -115,6 +115,28 @@ export function publicUser(user) {
     name: user.name,
     email: user.email,
     createdAt: user.createdAt,
+    isAdmin: Boolean(user.isAdmin),
+    isEnabled: Boolean(user.isEnabled),
+  };
+}
+
+export function adminEmails() {
+  return String(process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => normalizeEmail(email))
+    .filter(Boolean);
+}
+
+export function normalizeUserAccess(user, users) {
+  const configuredAdmins = adminEmails();
+  const isConfiguredAdmin = configuredAdmins.includes(normalizeEmail(user.email));
+  const isFirstUser = users.length === 0;
+  const isAdmin = Boolean(user.isAdmin) || isConfiguredAdmin || isFirstUser;
+
+  return {
+    ...user,
+    isAdmin,
+    isEnabled: user.isEnabled === undefined ? isAdmin : Boolean(user.isEnabled),
   };
 }
 
@@ -123,5 +145,6 @@ export async function getSignedInUser(request) {
   if (!payload) return null;
 
   const users = await readJsonBlob('users', []);
-  return users.find((user) => user.id === payload.userId) || null;
+  const user = users.find((item) => item.id === payload.userId);
+  return user ? normalizeUserAccess(user, users) : null;
 }

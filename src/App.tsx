@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, FileSpreadsheet, Play, LayoutDashboard, Sun, Moon, Lock, Unlock, X } from 'lucide-react';
+import { BookOpen, FileSpreadsheet, Play, LayoutDashboard, Sun, Moon, Lock, Unlock, X, Users } from 'lucide-react';
 import { Question, ExamHistoryItem, QuizSession, RevisionRequest, User } from './types';
 
 // Importing components
@@ -9,6 +9,7 @@ import TestBankManager from './components/TestBankManager';
 import ExamSimulator from './components/ExamSimulator';
 import ExamResults from './components/ExamResults';
 import AccountPanel from './components/AccountPanel';
+import AdminUsersPanel from './components/AdminUsersPanel';
 import { fetchCurrentUser } from './lib/authApi';
 import { fetchSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
 import { clearScores, fetchScores, saveScore } from './lib/scoreApi';
@@ -72,7 +73,7 @@ const INITIAL_SAMPLE_QUESTIONS: Question[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'bank' | 'upload' | 'quiz' | 'results'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'bank' | 'upload' | 'quiz' | 'results' | 'users'>('dashboard');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isQuestionBankLoading, setIsQuestionBankLoading] = useState(true);
   const [questionBankError, setQuestionBankError] = useState('');
@@ -91,6 +92,7 @@ export default function App() {
 
   // Theme state
   const [darkMode, setDarkMode] = useState(true);
+  const canManageQuestions = Boolean(isAdminMode || currentUser?.isAdmin);
 
   // Load state on mount
   useEffect(() => {
@@ -139,8 +141,12 @@ export default function App() {
         setCurrentUser(user);
 
         if (user) {
-          const scores = await fetchScores();
-          setHistory(scores);
+          if (user.isEnabled || user.isAdmin) {
+            const scores = await fetchScores();
+            setHistory(scores);
+          } else {
+            setHistory([]);
+          }
           localStorage.removeItem('pnle_history');
         }
       } catch (e) {
@@ -194,18 +200,27 @@ export default function App() {
 
     if (!user) {
       setHistory([]);
+      if (activeTab === 'users') {
+        setActiveTab('dashboard');
+      }
       return;
     }
 
     try {
-      const scores = await fetchScores();
-      setHistory(scores);
+      if (user.isEnabled || user.isAdmin) {
+        const scores = await fetchScores();
+        setHistory(scores);
+      } else {
+        setHistory([]);
+      }
     } catch (e) {
       console.error("Error loading scores:", e);
       setHistory([]);
       setScoreSyncError('Could not load score history for this account.');
     }
   };
+
+  const canAccessQuestions = Boolean(currentUser?.isEnabled || currentUser?.isAdmin || isAdminMode);
 
   const saveRevisions = (newRevisions: RevisionRequest[]) => {
     setRevisionRequests(newRevisions);
@@ -299,7 +314,7 @@ export default function App() {
 
   const handleLockAdmin = () => {
     setIsAdminMode(false);
-    if (activeTab === 'bank' || activeTab === 'upload') {
+    if (activeTab === 'bank' || activeTab === 'upload' || activeTab === 'users') {
       setActiveTab('dashboard');
     }
     alert("Admin privileges locked.");
@@ -367,7 +382,7 @@ export default function App() {
             </button>
 
             {/* Admin only views */}
-            {isAdminMode && (
+            {canManageQuestions && (
               <>
                 <button
                   className={`nav-button ${activeTab === 'bank' ? 'active' : ''}`}
@@ -384,6 +399,16 @@ export default function App() {
                   <span>Import Excel</span>
                 </button>
               </>
+            )}
+
+            {currentUser?.isAdmin && (
+              <button
+                className={`nav-button ${activeTab === 'users' ? 'active' : ''}`}
+                onClick={() => setActiveTab('users')}
+              >
+                <Users size={16} />
+                <span>Users</span>
+              </button>
             )}
 
             <button
@@ -449,10 +474,10 @@ export default function App() {
 
           {activeTab === 'dashboard' && (
             <Dashboard
-              questions={questions}
+              questions={canAccessQuestions ? questions : []}
               history={history}
               user={currentUser}
-              isAdminMode={isAdminMode}
+              isAdminMode={canManageQuestions}
               onNavigate={(tab) => {
                 if (tab === 'quiz') setActiveTab('quiz');
                 else if (tab === 'upload') setActiveTab('upload');
@@ -462,7 +487,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'bank' && isAdminMode && (
+          {activeTab === 'bank' && canManageQuestions && (
             <TestBankManager
               questions={questions}
               revisionRequests={revisionRequests}
@@ -474,16 +499,30 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'upload' && isAdminMode && (
+          {activeTab === 'upload' && canManageQuestions && (
             <ExcelUpload onQuestionsImported={handleQuestionsImported} />
           )}
 
+          {activeTab === 'users' && currentUser?.isAdmin && (
+            <AdminUsersPanel currentUser={currentUser} />
+          )}
+
           {activeTab === 'quiz' && (
-            <ExamSimulator
-              questions={questions}
-              onQuizSubmitted={handleQuizSubmitted}
-              onSubmitRevision={handleSubmitRevision}
-            />
+            canAccessQuestions ? (
+              <ExamSimulator
+                questions={questions}
+                onQuizSubmitted={handleQuizSubmitted}
+                onSubmitRevision={handleSubmitRevision}
+              />
+            ) : (
+              <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
+                <Lock size={48} style={{ color: 'var(--warning)', margin: '0 auto 16px' }} />
+                <h3>Account Approval Required</h3>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '560px', marginInline: 'auto' }}>
+                  Please sign in and wait for an admin to enable your account before opening the simulator or question bank.
+                </p>
+              </div>
+            )
           )}
 
           {activeTab === 'results' && completedSession && (

@@ -858,6 +858,12 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeIn 0.2s ease;
 }
 
+.account-modal-overlay {
+  align-items: flex-start;
+  padding: 96px 16px 24px;
+  overflow-y: auto;
+}
+
 .modal-content {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
