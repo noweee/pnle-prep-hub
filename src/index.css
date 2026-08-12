@@ -928,7 +928,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .profile-stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -990,6 +990,7 @@ h1, h2, h3, h4, h5, h6 {
 .profile-section {
   border-top: 1px solid var(--border-color);
   padding-top: 16px;
+  margin-top: 16px;
 }
 
 .profile-subject-list {
@@ -1042,6 +1043,13 @@ h1, h2, h3, h4, h5, h6 {
   margin-top: 20px;
   color: var(--danger);
   border-color: var(--danger);
+}
+
+.profile-reset-topic-btn {
+  min-width: 92px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  justify-content: center;
 }
 
 .modal-header {

@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Clock, Flag, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, BookOpen, ListOrdered, X } from 'lucide-react';
 import { Question, QuizConfig, QuizSession, QuizQuestionState, RevisionRequest } from '../types';
 
 interface ExamSimulatorProps {
   questions: Question[];
+  answeredQuestionIds: string[];
   onQuizSubmitted: (session: QuizSession) => void;
   onSubmitRevision: (req: RevisionRequest) => void;
 }
 
-export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevision }: ExamSimulatorProps) {
+export default function ExamSimulator({ questions, answeredQuestionIds, onQuizSubmitted, onSubmitRevision }: ExamSimulatorProps) {
   // Config states
   const [config, setConfig] = useState<QuizConfig>({
     category: 'all',
@@ -27,6 +28,7 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
   const [suggestedFixText, setSuggestedFixText] = useState('');
   
   const timerRef = useRef<any>(null);
+  const answeredQuestionSet = useMemo(() => new Set(answeredQuestionIds), [answeredQuestionIds]);
 
   // Categories list
   const categories = ['all', ...Array.from(new Set(questions.map(q => q.category || 'General Nursing Practice')))];
@@ -74,24 +76,37 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
     return shuffled;
   };
 
-  const selectQuestionsBySituation = (availableQuestions: Question[], targetCount: number) => {
-    const grouped = new Map<string, Question[]>();
+  const getQuestionGroupKey = (question: Question) => question.situationId || question.situationText || question.id;
 
+  const groupQuestionsBySituation = (availableQuestions: Question[]) => {
+    const grouped = new Map<string, Question[]>();
     availableQuestions.forEach((question) => {
-      const groupKey = question.situationId || question.situationText || question.id;
+      const groupKey = getQuestionGroupKey(question);
       grouped.set(groupKey, [...(grouped.get(groupKey) || []), question]);
     });
 
-    const shuffledGroups = shuffle(Array.from(grouped.values()).map((group) => shuffle(group)));
+    return Array.from(grouped.values()).map((group) => shuffle(group));
+  };
+
+  const selectQuestionsBySituation = (availableQuestions: Question[], targetCount: number) => {
+    const groups = groupQuestionsBySituation(availableQuestions).map((group) => ({
+      questions: group,
+      repeatedCount: group.filter((question) => answeredQuestionSet.has(question.id)).length,
+    }));
+
+    const freshGroups = shuffle(groups.filter((group) => group.repeatedCount === 0));
+    const repeatGroups = shuffle(groups.filter((group) => group.repeatedCount > 0))
+      .sort((a, b) => a.repeatedCount - b.repeatedCount);
+    const orderedGroups = [...freshGroups, ...repeatGroups];
     const selected: Question[] = [];
 
-    for (const group of shuffledGroups) {
+    for (const group of orderedGroups) {
       if (selected.length >= targetCount) break;
 
-      if (group.length > 1) {
-        selected.push(...group);
+      if (group.questions.length > 1) {
+        selected.push(...group.questions);
       } else {
-        selected.push(group[0]);
+        selected.push(group.questions[0]);
       }
     }
 
@@ -108,6 +123,19 @@ export default function ExamSimulator({ questions, onQuizSubmitted, onSubmitRevi
     if (selected.length === 0) {
       alert("No questions found in this category.");
       return;
+    }
+
+    const answeredInCategory = filtered.filter((question) => answeredQuestionSet.has(question.id)).length;
+    const repeatedCount = selected.filter((question) => answeredQuestionSet.has(question.id)).length;
+
+    if (repeatedCount > 0) {
+      const shouldContinue = window.confirm(
+        `You have already answered ${answeredInCategory} of ${filtered.length} questions in this subject. This session will include ${repeatedCount} repeated question${repeatedCount === 1 ? '' : 's'}. Continue?`
+      );
+
+      if (!shouldContinue) {
+        return;
+      }
     }
 
     const quizQuestions: QuizQuestionState[] = selected.map(q => ({

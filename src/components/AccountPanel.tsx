@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, Award, BarChart3, LogIn, LogOut, TrendingUp, UserPlus, UserRound } from 'lucide-react';
-import { ExamHistoryItem, RankingStats, User } from '../types';
+import { Activity, Award, BarChart3, ListChecks, LogIn, LogOut, RotateCcw, TrendingUp, UserPlus, UserRound } from 'lucide-react';
+import { ExamHistoryItem, Question, RankingStats, User } from '../types';
 import { registerAccount, signIn, signOut } from '../lib/authApi';
 
 interface AccountPanelProps {
   user: User | null;
   history: ExamHistoryItem[];
   ranking: RankingStats | null;
+  questions: Question[];
+  answeredQuestionIds: string[];
+  onResetAnsweredQuestions: (category: string) => Promise<void>;
   onUserChange: (user: User | null) => void;
 }
 
@@ -79,7 +82,49 @@ function getProfileStats(history: ExamHistoryItem[]) {
   };
 }
 
-export default function AccountPanel({ user, history, ranking, onUserChange }: AccountPanelProps) {
+function getQuestionCoverage(questions: Question[], answeredQuestionIds: string[]) {
+  const answeredSet = new Set(answeredQuestionIds);
+  const totalQuestions = questions.length;
+  const answeredCount = questions.filter((question) => answeredSet.has(question.id)).length;
+  const answeredPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const subjectMap = new Map<string, { total: number; answered: number }>();
+
+  questions.forEach((question) => {
+    const subject = question.category || 'General Nursing Practice';
+    const current = subjectMap.get(subject) || { total: 0, answered: 0 };
+    current.total += 1;
+    if (answeredSet.has(question.id)) {
+      current.answered += 1;
+    }
+    subjectMap.set(subject, current);
+  });
+
+  const subjectCoverage = Array.from(subjectMap.entries())
+    .map(([subject, item]) => ({
+      subject,
+      total: item.total,
+      answered: item.answered,
+      percent: item.total > 0 ? Math.round((item.answered / item.total) * 100) : 0,
+    }))
+    .sort((a, b) => b.percent - a.percent || a.subject.localeCompare(b.subject));
+
+  return {
+    totalQuestions,
+    answeredCount,
+    answeredPercent,
+    subjectCoverage,
+  };
+}
+
+export default function AccountPanel({
+  user,
+  history,
+  ranking,
+  questions,
+  answeredQuestionIds,
+  onResetAnsweredQuestions,
+  onUserChange,
+}: AccountPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
@@ -87,7 +132,12 @@ export default function AccountPanel({ user, history, ranking, onUserChange }: A
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const [resettingSubject, setResettingSubject] = useState('');
   const profileStats = useMemo(() => getProfileStats(history), [history]);
+  const questionCoverage = useMemo(
+    () => getQuestionCoverage(questions, answeredQuestionIds),
+    [questions, answeredQuestionIds]
+  );
   const rankLabel = ranking?.rank
     ? `#${ranking.rank} of ${ranking.totalRankedUsers}`
     : 'Unranked';
@@ -116,6 +166,21 @@ export default function AccountPanel({ user, history, ranking, onUserChange }: A
       setError(err instanceof Error ? err.message : 'Account request failed.');
     } finally {
       setIsBusy(false);
+    }
+  };
+
+  const handleResetSubject = async (subject: string) => {
+    const shouldReset = window.confirm(
+      `Reset answered-question tracking for ${subject}? This lets this profile receive those questions again.`
+    );
+
+    if (!shouldReset) return;
+
+    setResettingSubject(subject);
+    try {
+      await onResetAnsweredQuestions(subject);
+    } finally {
+      setResettingSubject('');
     }
   };
 
@@ -185,6 +250,11 @@ export default function AccountPanel({ user, history, ranking, onUserChange }: A
               <span>Pass Rate</span>
               <strong>{profileStats.passRate}%</strong>
             </div>
+            <div className="profile-stat-card">
+              <ListChecks size={18} />
+              <span>Questions Answered</span>
+              <strong>{questionCoverage.answeredPercent}%</strong>
+            </div>
           </div>
 
           <div className="profile-summary-row">
@@ -204,6 +274,56 @@ export default function AccountPanel({ user, history, ranking, onUserChange }: A
               <span>Strongest Subject</span>
               <strong>{profileStats.bestSubject}</strong>
             </div>
+          </div>
+
+          <div className="profile-section">
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <ListChecks size={16} />
+              Question Coverage
+            </h4>
+            {questionCoverage.totalQuestions === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                Import questions to start tracking coverage.
+              </p>
+            ) : (
+              <div className="profile-subject-list">
+                <div className="profile-subject-row">
+                  <div className="profile-subject-label">
+                    <strong>All Subjects</strong>
+                    <span>
+                      {questionCoverage.answeredCount} of {questionCoverage.totalQuestions} answered
+                    </span>
+                  </div>
+                  <div className="profile-subject-meter">
+                    <div style={{ width: `${Math.max(4, questionCoverage.answeredPercent)}%` }} />
+                  </div>
+                  <span className="badge badge-info">{questionCoverage.answeredPercent}%</span>
+                </div>
+
+                {questionCoverage.subjectCoverage.map((subject) => (
+                  <div key={subject.subject} className="profile-subject-row">
+                    <div className="profile-subject-label">
+                      <strong title={subject.subject}>{subject.subject}</strong>
+                      <span>
+                        {subject.answered} of {subject.total} answered
+                      </span>
+                    </div>
+                    <div className="profile-subject-meter">
+                      <div style={{ width: `${Math.max(4, subject.percent)}%` }} />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary profile-reset-topic-btn"
+                      disabled={subject.answered === 0 || resettingSubject === subject.subject}
+                      onClick={() => handleResetSubject(subject.subject)}
+                    >
+                      <RotateCcw size={14} />
+                      {resettingSubject === subject.subject ? 'Resetting...' : 'Reset'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="profile-section">

@@ -12,6 +12,7 @@ import AccountPanel from './components/AccountPanel';
 import AdminUsersPanel from './components/AdminUsersPanel';
 import { fetchCurrentUser } from './lib/authApi';
 import { fetchSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
+import { fetchQuestionProgress, markAnsweredQuestions, resetAnsweredQuestions } from './lib/progressApi';
 import { clearScores, fetchScores, saveScore } from './lib/scoreApi';
 import { getQuestionFingerprint } from './lib/questionFingerprint';
 
@@ -83,6 +84,7 @@ export default function App() {
   const [isAccountLoading, setIsAccountLoading] = useState(true);
   const [scoreSyncError, setScoreSyncError] = useState('');
   const [rankingStats, setRankingStats] = useState<RankingStats | null>(null);
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<string[]>([]);
   const [revisionRequests, setRevisionRequests] = useState<RevisionRequest[]>([]);
   const [completedSession, setCompletedSession] = useState<QuizSession | null>(null);
 
@@ -138,12 +140,17 @@ export default function App() {
 
         if (user) {
           if (user.isEnabled || user.isAdmin) {
-            const scoreData = await fetchScores();
+            const [scoreData, questionProgress] = await Promise.all([
+              fetchScores(),
+              fetchQuestionProgress(),
+            ]);
             setHistory(scoreData.scores);
             setRankingStats(scoreData.ranking);
+            setAnsweredQuestionIds(questionProgress);
           } else {
             setHistory([]);
             setRankingStats(null);
+            setAnsweredQuestionIds([]);
           }
           localStorage.removeItem('pnle_history');
         }
@@ -199,6 +206,7 @@ export default function App() {
     if (!user) {
       setHistory([]);
       setRankingStats(null);
+      setAnsweredQuestionIds([]);
       if (activeTab === 'bank' || activeTab === 'upload' || activeTab === 'users') {
         setActiveTab('dashboard');
       }
@@ -207,17 +215,23 @@ export default function App() {
 
     try {
       if (user.isEnabled || user.isAdmin) {
-        const scoreData = await fetchScores();
+        const [scoreData, questionProgress] = await Promise.all([
+          fetchScores(),
+          fetchQuestionProgress(),
+        ]);
         setHistory(scoreData.scores);
         setRankingStats(scoreData.ranking);
+        setAnsweredQuestionIds(questionProgress);
       } else {
         setHistory([]);
         setRankingStats(null);
+        setAnsweredQuestionIds([]);
       }
     } catch (e) {
       console.error("Error loading scores:", e);
       setHistory([]);
       setRankingStats(null);
+      setAnsweredQuestionIds([]);
       setScoreSyncError('Could not load score history for this account.');
     }
   };
@@ -308,6 +322,32 @@ export default function App() {
     }
   };
 
+  const handleResetAnsweredQuestions = async (category: string) => {
+    if (!currentUser) {
+      alert("Please sign in to manage question progress.");
+      return;
+    }
+
+    const questionIds = questions
+      .filter((question) => category === 'all' || (question.category || 'General Nursing Practice') === category)
+      .map((question) => question.id);
+
+    if (questionIds.length === 0) {
+      alert("No questions were found for this subject.");
+      return;
+    }
+
+    try {
+      const nextAnsweredIds = await resetAnsweredQuestions(questionIds);
+      setAnsweredQuestionIds(nextAnsweredIds);
+      alert("Question repeat tracking was reset for this subject.");
+    } catch (e) {
+      console.error("Error resetting question progress:", e);
+      setScoreSyncError('Could not reset answered-question tracking. Please try again.');
+      alert("Could not reset answered-question tracking. Please try again.");
+    }
+  };
+
   // Revision Requests handlers
   const handleSubmitRevision = (req: RevisionRequest) => {
     const updated = [req, ...revisionRequests];
@@ -349,6 +389,14 @@ export default function App() {
         setHistory(scoreData.scores);
         setRankingStats(scoreData.ranking);
         setScoreSyncError('');
+
+        try {
+          const nextAnsweredIds = await markAnsweredQuestions(session.questions.map((item) => item.question.id));
+          setAnsweredQuestionIds(nextAnsweredIds);
+        } catch (progressError) {
+          console.error("Error saving question progress:", progressError);
+          setScoreSyncError('Score saved, but answered-question tracking could not update.');
+        }
       } catch (e) {
         console.error("Error saving score:", e);
         setHistory([historyItem, ...history]);
@@ -425,7 +473,15 @@ export default function App() {
                 <span>Loading Account</span>
               </span>
             ) : (
-              <AccountPanel user={currentUser} history={history} ranking={rankingStats} onUserChange={handleUserChange} />
+              <AccountPanel
+                user={currentUser}
+                history={history}
+                ranking={rankingStats}
+                questions={questions}
+                answeredQuestionIds={answeredQuestionIds}
+                onResetAnsweredQuestions={handleResetAnsweredQuestions}
+                onUserChange={handleUserChange}
+              />
             )}
 
             <button
@@ -499,6 +555,7 @@ export default function App() {
             canAccessQuestions ? (
               <ExamSimulator
                 questions={questions}
+                answeredQuestionIds={answeredQuestionIds}
                 onQuizSubmitted={handleQuizSubmitted}
                 onSubmitRevision={handleSubmitRevision}
               />
