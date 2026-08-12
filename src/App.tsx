@@ -11,7 +11,7 @@ import ExamResults from './components/ExamResults';
 import AccountPanel from './components/AccountPanel';
 import AdminUsersPanel from './components/AdminUsersPanel';
 import { fetchCurrentUser } from './lib/authApi';
-import { fetchSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
+import { fetchSharedQuestions, importSharedQuestions, saveSharedQuestions } from './lib/questionBankApi';
 import { fetchQuestionProgress, markAnsweredQuestions, resetAnsweredQuestions } from './lib/progressApi';
 import { clearScores, fetchScores, saveScore } from './lib/scoreApi';
 import { getQuestionFingerprint } from './lib/questionFingerprint';
@@ -73,6 +73,18 @@ const INITIAL_SAMPLE_QUESTIONS: Question[] = [
     category: "NP V: Care of Clients with Physiologic and Psychosocial Alterations (Part C)"
   }
 ];
+
+function sortQuestions(items: Question[]) {
+  return [...items].sort((a, b) => {
+    const categoryCompare = (a.category || '').localeCompare(b.category || '');
+    if (categoryCompare !== 0) return categoryCompare;
+
+    const situationCompare = (a.situationText || '').localeCompare(b.situationText || '');
+    if (situationCompare !== 0) return situationCompare;
+
+    return a.questionText.localeCompare(b.questionText);
+  });
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bank' | 'upload' | 'quiz' | 'results' | 'users'>('dashboard');
@@ -283,12 +295,21 @@ export default function App() {
       return;
     }
 
-    const merged = [...questions, ...uniqueImported];
-    const didSave = await saveQuestions(merged);
-    if (didSave) {
-      const skippedCount = imported.length - uniqueImported.length;
-      alert(`Successfully imported ${uniqueImported.length} new questions.${skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.` : ''}`);
+    try {
+      setQuestions((previous) => sortQuestions([...previous, ...uniqueImported]));
+      const result = await importSharedQuestions(uniqueImported);
+      setQuestions(result.questions);
+      setQuestionBankError('');
+      const skippedCount = imported.length - result.importedCount;
+      alert(`Successfully imported ${result.importedCount} new questions.${skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.` : ''}`);
       setActiveTab('bank');
+    } catch (e) {
+      console.error("Error importing shared questions:", e);
+      const refreshedQuestions = await fetchSharedQuestions().catch(() => questions);
+      setQuestions(refreshedQuestions);
+      const message = e instanceof Error ? e.message : 'Unable to save the shared question bank.';
+      setQuestionBankError(message);
+      alert(message);
     }
   };
 
