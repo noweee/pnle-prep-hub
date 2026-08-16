@@ -339,6 +339,38 @@ export default function App() {
     }
   };
 
+  const handleClearCategory = async (category: string) => {
+    const previousQuestions = questions;
+    const removedIds = new Set(
+      questions
+        .filter((question) => (question.category || 'General Nursing Practice') === category)
+        .map((question) => question.id)
+    );
+
+    if (removedIds.size === 0) {
+      alert("No questions were found in this NP/subject.");
+      return;
+    }
+
+    const updatedQuestions = questions.filter((question) => !removedIds.has(question.id));
+    setQuestions(updatedQuestions);
+
+    try {
+      const savedQuestions = await saveSharedQuestions(updatedQuestions);
+      setQuestions(savedQuestions);
+      setAnsweredQuestionIds((current) => current.filter((id) => !removedIds.has(id)));
+      setQuestionBankError('');
+      saveRevisions(revisionRequests.filter((request) => !removedIds.has(request.questionId)));
+      alert(`Cleared ${removedIds.size} question${removedIds.size === 1 ? '' : 's'} from "${category}".`);
+    } catch (e) {
+      console.error("Error clearing selected NP:", e);
+      setQuestions(previousQuestions);
+      const message = e instanceof Error ? e.message : 'Unable to clear this NP/subject.';
+      setQuestionBankError(message);
+      alert(message);
+    }
+  };
+
   // Reset Progress Handlers
   const handleClearHistory = async () => {
     if (!currentUser) {
@@ -577,6 +609,7 @@ export default function App() {
               onEditQuestion={handleEditQuestion}
               onDeleteQuestion={handleDeleteQuestion}
               onClearBank={handleClearBank}
+              onClearCategory={handleClearCategory}
               onDismissRevision={handleDismissRevision}
             />
           )}

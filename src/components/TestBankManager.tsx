@@ -9,6 +9,7 @@ interface TestBankManagerProps {
   onEditQuestion: (q: Question) => void;
   onDeleteQuestion: (id: string) => void;
   onClearBank: () => void;
+  onClearCategory: (category: string) => void;
   onDismissRevision: (id: string) => void;
 }
 
@@ -19,6 +20,7 @@ export default function TestBankManager({
   onEditQuestion,
   onDeleteQuestion,
   onClearBank,
+  onClearCategory,
   onDismissRevision
 }: TestBankManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,6 +146,23 @@ export default function TestBankManager({
     }
   };
 
+  const handleClearSelectedCategory = () => {
+    if (selectedCategory === 'all') {
+      alert("Please select a specific NP/subject before clearing by category.");
+      return;
+    }
+
+    const categoryCount = questions.filter((q) => (q.category || 'General Nursing Practice') === selectedCategory).length;
+    if (categoryCount === 0) {
+      alert("No questions were found in this NP/subject.");
+      return;
+    }
+
+    if (confirm(`WARNING: This will permanently delete ${categoryCount} question${categoryCount === 1 ? '' : 's'} from "${selectedCategory}" only. Continue?`)) {
+      onClearCategory(selectedCategory);
+    }
+  };
+
   // Filtering questions
   const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.questionText.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -208,10 +227,21 @@ export default function TestBankManager({
           </div>
 
           {questions.length > 0 && (
-            <button className="btn btn-danger" onClick={handleClearAll} style={{ padding: '10px 16px' }}>
-              <Trash2 size={16} />
-              Clear Bank
-            </button>
+            <>
+              <button
+                className="btn btn-secondary"
+                onClick={handleClearSelectedCategory}
+                disabled={selectedCategory === 'all'}
+                style={{ padding: '10px 16px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+              >
+                <Trash2 size={16} />
+                Clear Selected NP
+              </button>
+              <button className="btn btn-danger" onClick={handleClearAll} style={{ padding: '10px 16px' }}>
+                <Trash2 size={16} />
+                Clear Bank
+              </button>
+            </>
           )}
         </div>
       </div>
