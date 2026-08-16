@@ -272,7 +272,7 @@ export default function App() {
 
     if (uniqueImported.length === 0) {
       alert("No new questions were imported because every valid row already exists in the question bank.");
-      return;
+      return false;
     }
 
     try {
@@ -283,6 +283,7 @@ export default function App() {
       const skippedCount = imported.length - result.importedCount;
       alert(`Successfully imported ${result.importedCount} new questions.${skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.` : ''}`);
       setActiveTab('bank');
+      return true;
     } catch (e) {
       console.error("Error importing shared questions:", e);
       const refreshedQuestions = await fetchSharedQuestions().catch(() => questions);
@@ -290,6 +291,7 @@ export default function App() {
       const message = e instanceof Error ? e.message : 'Unable to save the shared question bank.';
       setQuestionBankError(message);
       alert(message);
+      return false;
     }
   };
 

@@ -6,7 +6,7 @@ import { getParsedQuestionFingerprint, getQuestionFingerprint } from '../lib/que
 
 interface ExcelUploadProps {
   existingQuestions: Question[];
-  onQuestionsImported: (questions: Question[]) => void;
+  onQuestionsImported: (questions: Question[]) => Promise<boolean>;
 }
 
 interface ParsedRow {
@@ -32,6 +32,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
   const [fileName, setFileName] = useState<string>('');
   const [questionnaireSource, setQuestionnaireSource] = useState('');
   const [isParsing, setIsParsing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -206,7 +207,7 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
     reader.readAsArrayBuffer(file);
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const validQuestions: Question[] = sortQuestions(parsedRows
       .filter(row => row.isValid)
       .map((row, idx) => ({
@@ -230,10 +231,18 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
       return;
     }
 
-    onQuestionsImported(validQuestions);
-    setParsedRows([]);
-    setFileName('');
-    setQuestionnaireSource('');
+    setIsImporting(true);
+
+    try {
+      const didImport = await onQuestionsImported(validQuestions);
+      if (didImport) {
+        setParsedRows([]);
+        setFileName('');
+        setQuestionnaireSource('');
+      }
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Generate and download a sample excel file
@@ -454,12 +463,12 @@ export default function ExcelUpload({ existingQuestions, onQuestionsImported }: 
             </div>
             <button
               className="btn btn-primary"
-              disabled={validCount === 0}
+              disabled={validCount === 0 || isImporting}
               onClick={handleImport}
               style={{ padding: '12px 24px' }}
             >
               <PlusCircle size={18} />
-              Import {validCount} Valid Questions
+              {isImporting ? 'Saving Questions...' : `Import ${validCount} Valid Questions`}
             </button>
           </div>
 
