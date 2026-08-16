@@ -4,6 +4,7 @@ interface QuestionBankResponse {
   questions?: Question[];
   importedCount?: number;
   skippedCount?: number;
+  totalCount?: number;
   error?: string;
 }
 
@@ -11,6 +12,7 @@ export interface QuestionImportResult {
   questions: Question[];
   importedCount: number;
   skippedCount: number;
+  totalCount: number;
 }
 
 async function readQuestionBankResponse(response: Response): Promise<QuestionBankResponse> {
@@ -70,6 +72,7 @@ export async function importSharedQuestions(questions: Question[]): Promise<Ques
     questions: Array.isArray(data.questions) ? data.questions : [],
     importedCount: Number(data.importedCount || 0),
     skippedCount: Number(data.skippedCount || 0),
+    totalCount: Number(data.totalCount || 0),
   };
 }
 

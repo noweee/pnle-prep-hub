@@ -86,6 +86,10 @@ function sortQuestions(items: Question[]) {
   });
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bank' | 'upload' | 'quiz' | 'results' | 'users'>('dashboard');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -255,6 +259,20 @@ export default function App() {
     localStorage.setItem('pnle_revisions', JSON.stringify(newRevisions));
   };
 
+  const refreshQuestionsAfterImport = async (expectedMinimumCount: number) => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (attempt > 0) {
+        await wait(700);
+      }
+
+      const refreshedQuestions = await fetchSharedQuestions();
+      if (refreshedQuestions.length >= expectedMinimumCount || attempt === 2) {
+        setQuestions(refreshedQuestions);
+        return;
+      }
+    }
+  };
+
   // CRUD actions
   const handleQuestionsImported = async (imported: Question[]) => {
     const existingFingerprints = new Set(questions.map(getQuestionFingerprint));
@@ -276,13 +294,20 @@ export default function App() {
     }
 
     try {
+      const pendingFingerprints = new Set(uniqueImported.map(getQuestionFingerprint));
       setQuestions((previous) => sortQuestions([...previous, ...uniqueImported]));
       const result = await importSharedQuestions(uniqueImported);
-      setQuestions(result.questions);
+      setQuestions((previous) => {
+        const withoutPending = previous.filter((question) => !pendingFingerprints.has(getQuestionFingerprint(question)));
+        return sortQuestions([...withoutPending, ...result.questions]);
+      });
       setQuestionBankError('');
       const skippedCount = imported.length - result.importedCount;
       alert(`Successfully imported ${result.importedCount} new questions.${skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.` : ''}`);
       setActiveTab('bank');
+      refreshQuestionsAfterImport(result.totalCount || questions.length + result.importedCount).catch((error) => {
+        console.error("Error refreshing shared questions after import:", error);
+      });
       return true;
     } catch (e) {
       console.error("Error importing shared questions:", e);

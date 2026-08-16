@@ -70,9 +70,10 @@ export default async function handler(request, response) {
       const sortedQuestions = sortQuestions([...existingList, ...uniqueIncoming]);
       await writeJsonBlob('questions', sortedQuestions);
       return sendJson(response, {
-        questions: sortedQuestions,
+        questions: sortQuestions(uniqueIncoming),
         importedCount: uniqueIncoming.length,
         skippedCount: questions.length - uniqueIncoming.length,
+        totalCount: sortedQuestions.length,
       });
     }
 
